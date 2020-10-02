@@ -7,6 +7,8 @@ edition = "2018"
 [dependencies]
 gl = "0.14.0"
 image = "0.23.10"
+lazy_static = "1.4.0"
+cgmath = "0.17.0"
 
 
 [dependencies.sdl2]

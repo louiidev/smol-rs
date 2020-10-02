@@ -5,8 +5,6 @@ use std::str;
 use std::ffi::c_void;
 
 use image::DynamicImage;
-use image::ImageFormat;
-
 
 
 static VERTEX_DATA: [f32; 8] = [
@@ -21,6 +19,8 @@ static INDEX_DATA: [u32; 6] = [
     1, 2, 3  // second triangl::
 ];
 
+
+
 // Shader sources
 static VS_SRC: &'_ str = "
     #version 330 core
@@ -34,7 +34,7 @@ static VS_SRC: &'_ str = "
 
     void main()
     {
-        gl::Position = projection * model * vec4(vertex.xy, 0.0, 1.0);
+        gl_Position = projection * model * vec4(vertex.xy, 0.0, 1.0);
         TexCoord = tex_coords;
     }";
 
@@ -52,8 +52,8 @@ static FS_SRC: &'_ str = "
         FragColor = texture(ourTexture, TexCoord) * u_color; 
     }";
 
-const SCREEN_WIDTH: u32 = 640;
-const SCREEN_HEIGHT: u32 = 480;
+const SCREEN_WIDTH: u32 = 800;
+const SCREEN_HEIGHT: u32 = 600;
 
 struct Matrix
 {
@@ -73,6 +73,7 @@ impl Matrix {
             self.m12, self.m13, self.m14, self.m15
         ]
     }
+
     fn translate(base: Vector3) -> Self {
         Matrix {
             m0: 1.0, m4: 0.0, m8: 0.0, m12: base.x,
@@ -137,16 +138,22 @@ impl Texture {
     }
 }
 
+impl Drop for Texture {
+    fn drop(&mut self) {
+        unsafe { gl::DeleteTextures(1, &self.id); };
+    }
+}
+
 pub struct Rectangle {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32
 }
 
 pub struct Vector2 {
-    x: f32,
-    y: f32
+    pub x: f32,
+    pub y: f32
 }
 
 pub struct Vector3 {
@@ -221,8 +228,9 @@ fn compile_shader(src: &str, ty: gl::types::GLenum) -> u32 {
                 ptr::null_mut(),
                 buf.as_mut_ptr() as *mut gl::types::GLchar,
             );
+            println!("{}", src);
             panic!(
-                "{}",
+                "couldn't compile shader {}",
                 str::from_utf8(&buf)
                     .ok()
                     .expect("ShaderInfoLog not valid utf8")
@@ -276,7 +284,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn init() -> Self {
+    pub fn default() -> Self {
         let white_texture: u32 = 0xffffffff;
         let mut white_tex_id: u32 = 0;
 
@@ -291,14 +299,11 @@ impl Renderer {
         let mut TBO: u32 = 0;
 
         unsafe {
-
+      
             gl::UseProgram(shader);
 
             let proj = orthographic_projection(0.0, SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32, 0.0, -1.0, 1.0).f32_array();
-            let proj_c_name = CString::new("projection").unwrap();
-            let pos = gl::GetUniformLocation(shader, proj_c_name.as_ptr());
-            gl::UseProgram(shader);
-            gl::UniformMatrix4fv(pos, 1, 0, mem::transmute(&proj[0]));
+            gl::UniformMatrix4fv(get_uniform_location(shader, "projection"), 1, gl::FALSE, mem::transmute(&proj[0]));
 
             gl::GenTextures(1, &mut white_tex_id);
             gl::BindTexture(gl::TEXTURE_2D, white_tex_id);
@@ -334,6 +339,8 @@ impl Renderer {
             gl::BindVertexArray(0);
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            gl::DeleteShader(fs);
+            gl::DeleteShader(vs);
         }
         
         
@@ -353,7 +360,7 @@ impl Renderer {
 
     pub fn clear(color: Color) {
         unsafe {
-            gl::ClearColor(color.0, color.1, color.2, color.3);
+            gl::ClearColor(color.0 / 255., color.1 / 255., color.2 / 255., color.3 /255.);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
     }
@@ -362,7 +369,7 @@ impl Renderer {
         unsafe { gl::Viewport(0, 0, width as i32, height as i32); };
     }
 
-    pub fn rect(self, rect: Rectangle, color: Color) {
+    pub fn rect(&self, rect: Rectangle, color: Color) {
         
 		let mut model = Matrix::translate(Vector3 { x: rect.x, y: rect.y, z: 0.0 });
 		model.scale(Vector2{ x: rect.width, y: rect.height });
@@ -382,11 +389,11 @@ impl Renderer {
 		
     }
 
-    pub fn texture(self, texture: Texture, position: Vector2) {
+    pub fn texture(&self, texture: &Texture, position: Vector2) {
         Renderer::texture_scale(self, texture, position, 1.0);
     }
 
-    pub fn texture_scale(self, texture: Texture, position: Vector2, scale: f32) {
+    pub fn texture_scale(&self, texture: &Texture, position: Vector2, scale: f32) {
         
         let mut model = Matrix::translate(position.into());
         model.scale(Vector2 { x: texture.width as f32 * scale, y: texture.height as f32 * scale });
@@ -490,11 +497,9 @@ impl Renderer {
 		let mut model = Matrix::translate(Vector3 { x: dest.x, y: dest.y, z: 0.0 });
 		model.scale(Vector2 { x: dest.width as f32, y: dest.height as f32 });
         let float_model = model.f32_array();
-        let model_c_name = CString::new("model").unwrap();
-        let color_c_name = CString::new("u_color").unwrap();
         unsafe {
-            gl::UniformMatrix4fv(gl::GetUniformLocation(self.shader_2d, model_c_name.as_ptr()), 1, 0, mem::transmute(&float_model[0]));
-            gl::Uniform4f(gl::GetUniformLocation(self.shader_2d, color_c_name.as_ptr()), 1.0, 1.0, 1.0, 1.0);
+            gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, 0, mem::transmute(&float_model[0]));
+            gl::Uniform4f(get_uniform_location(self.shader_2d, "u_color"), 1.0, 1.0, 1.0, 1.0);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.tbo);
         }
 
@@ -532,4 +537,17 @@ impl Renderer {
 		
     }
 
+}
+
+impl Drop for Renderer {
+    fn drop(&mut self) {
+        println!("Renderer dropped");
+        unsafe {
+            gl::DeleteProgram(self.shader_2d);
+            gl::DeleteBuffers(1, &self.tbo);
+            gl::DeleteBuffers(1, &self.ibo);
+            gl::DeleteBuffers(1, &self.vbo);
+            gl::DeleteVertexArrays(1, &self.vao);
+        }
+    }
 }
