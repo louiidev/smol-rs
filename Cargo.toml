@@ -10,6 +10,17 @@ image = "0.23.10"
 lazy_static = "1.4.0"
 cgmath = "0.17.0"
 
-
 [dependencies.sdl2]
-git = "https://github.com/rust-sdl2/rust-sdl2"
+version = "0.34"
+default-features = false
+features = ["static-link","use-vcpkg"]
+
+
+
+[package.metadata.vcpkg]
+dependencies = ["sdl2"]
+git = "https://github.com/microsoft/vcpkg"
+rev = "a0518036077baa4"
+
+[package.metadata.vcpkg.target]
+x86_64-pc-windows-msvc = { triplet = "x64-windows-static-md" }
