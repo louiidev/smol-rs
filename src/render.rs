@@ -4,6 +4,7 @@ use std::ptr;
 use std::str;
 use std::ffi::c_void;
 
+use crate::math::*;
 use image::DynamicImage;
 
 
@@ -55,68 +56,8 @@ static FS_SRC: &'_ str = "
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 
-struct Matrix
-{
-	m0: f32, m4: f32, m8: f32, m12: f32,
-	m1: f32, m5: f32, m9: f32, m13: f32,
-	m2: f32, m6: f32, m10: f32, m14: f32,
-	m3: f32, m7: f32, m11: f32, m15: f32
-}
 
-impl Matrix {
-    fn f32_array(self) -> [f32; 16]
-	{
-		[
-            self.m0, self.m1, self.m2, self.m3,
-            self.m4, self.m5, self.m6, self.m7,
-            self.m8, self.m9, self.m10, self.m11,
-            self.m12, self.m13, self.m14, self.m15
-        ]
-    }
-
-    fn translate(base: Vector3) -> Self {
-        Matrix {
-            m0: 1.0, m4: 0.0, m8: 0.0, m12: base.x,
-            m1: 0.0, m5: 1.0, m9: 0.0, m13: base.y,
-            m2: 0.0, m6: 0.0, m10: 1.0, m14: base.z,
-            m3: 0.0, m7: 0.0, m11: 0.0, m15: 1.0
-        }
-    }
-
-    fn scale(&mut self, scale: Vector2) {
-        self.m0 *= scale.x;
-		self.m5 *= scale.y;
-    }
-
-    fn ortho(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Self
-    {
-
-        let rl = right - left;
-        let tb = top - bottom;
-        let f_n = far - near;
-
-        Matrix {
-            m0: 2.0 / rl,
-            m1: 0.0,
-            m2: 0.0,
-            m3: 0.0,
-            m4: 0.0,
-            m5: 2.0 / tb,
-            m6: 0.0,
-            m7: 0.0,
-            m8: 0.0,
-            m9: 0.0,
-            m10: -2.0 / f_n,
-            m11: 0.0,
-            m12: -(left + right) / rl,
-            m13: -(top + bottom) / tb,
-            m14: -(far + near) / f_n,
-            m15: 1.0
-        }
-    }
-
-}
-
+#[derive(Debug)]
 pub struct Texture {
     id: u32,
     width: u32,
@@ -172,33 +113,7 @@ impl Drop for Texture {
     }
 }
 
-pub struct Rectangle {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32
-}
 
-pub struct Vector2 {
-    pub x: f32,
-    pub y: f32
-}
-
-pub struct Vector3 {
-    x: f32,
-    y: f32,
-    z: f32
-}
-
-impl From<Vector2> for Vector3 {
-    fn from(item: Vector2) -> Self {
-        Vector3 {
-            x: item.x,
-            y: item.y,
-            z: 0.0
-        }
-    }
-}
 
 pub struct Color (pub f32, pub f32, pub f32, pub f32);
 
@@ -302,7 +217,7 @@ impl Renderer {
       
             gl::UseProgram(shader);
 
-            let proj = Matrix::ortho(0.0, SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32, 0.0, -1.0, 1.0).f32_array();
+            let proj: [f32; 16] = Matrix::ortho(0.0, SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32, 0.0, -1.0, 1.0).into();
             gl::UniformMatrix4fv(get_uniform_location(shader, "projection"), 1, gl::FALSE, proj.as_ptr());
 
             gl::GenTextures(1, &mut white_tex_id);
@@ -373,7 +288,7 @@ impl Renderer {
         
 		let mut model = Matrix::translate(Vector3 { x: rect.x, y: rect.y, z: 0.0 });
 		model.scale(Vector2{ x: rect.width, y: rect.height });
-		let float_model = model.f32_array();
+		let float_model: [f32; 16] = model.into();
         unsafe {
             gl::UseProgram(self.shader_2d);
             gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, gl::FALSE, float_model.as_ptr());
@@ -390,7 +305,7 @@ impl Renderer {
     }
 
     pub fn texture(&self, texture: &Texture, position: Vector2) {
-        Renderer::texture_scale(self, texture, position, 1.0);
+        Renderer::texture_scale(self, texture, position.clone(), 1.0);
     }
 
     pub fn texture_scale(&self, texture: &Texture, position: Vector2, scale: f32) {
@@ -398,7 +313,7 @@ impl Renderer {
         let mut model = Matrix::translate(position.into());
         model.scale(Vector2 { x: texture.width as f32 * scale, y: texture.height as f32 * scale });
 		
-        let float_model = model.f32_array();
+        let float_model: [f32; 16] = model.into();
         unsafe {
             gl::UseProgram(self.shader_2d);
             gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, gl::FALSE, float_model.as_ptr());
@@ -416,15 +331,15 @@ impl Renderer {
     }
 
 
-    pub fn texture_rect(self, texture: Texture, rect: Rectangle, position: Vector2) {
+    pub fn texture_rect(self, texture: &Texture, rect: Rectangle, position: Vector2) {
         Renderer::texture_rect_scale(self, texture, rect, position, 1.0);
     }
 
-    pub fn texture_rect_scale(self, texture: Texture, rect: Rectangle, position: Vector2, scale: f32) {
+    pub fn texture_rect_scale(self, texture: &Texture, rect: Rectangle, position: Vector2, scale: f32) {
        
         let mut model = Matrix::translate(Vector3 { x: position.x, y: position.y, z: 0.0 });
 		model.scale(Vector2{ x: rect.width * scale, y: rect.height * scale });
-		let float_model = model.f32_array();
+		let float_model: [f32; 16] = model.into();
 
         unsafe {
             gl::UseProgram(self.shader_2d);
@@ -467,11 +382,11 @@ impl Renderer {
         };
     }
 
-    pub fn atlas_sub(&self, texture: Texture, x_pos: u32, y_pos: u32, texture_size: u32, position: Vector2) {
+    pub fn atlas_sub(&self, texture: &Texture, x_pos: u32, y_pos: u32, texture_size: u32, position: Vector2) {
         Renderer::atlas_sub_s(self, texture, x_pos, y_pos, texture_size, position, 1.0);
     }
 
-    pub fn atlas_sub_s(&self, texture: Texture, x_pos: u32, y_pos: u32, texture_size: u32, position: Vector2, scale: f32) {
+    pub fn atlas_sub_s(&self, texture: &Texture, x_pos: u32, y_pos: u32, texture_size: u32, position: Vector2, scale: f32) {
 
         let source = Rectangle {
             x: x_pos as f32,
@@ -490,13 +405,13 @@ impl Renderer {
         Renderer::atlas_sub_rect(self, texture, source, dest);
     }
 
-    pub fn atlas_sub_rect(&self, texture: Texture, sub_texture_data: Rectangle, dest: Rectangle) {
+    pub fn atlas_sub_rect(&self, texture: &Texture, sub_texture_data: Rectangle, dest: Rectangle) {
         unsafe {
             gl::UseProgram(self.shader_2d);
         }
 		let mut model = Matrix::translate(Vector3 { x: dest.x, y: dest.y, z: 0.0 });
 		model.scale(Vector2 { x: dest.width as f32, y: dest.height as f32 });
-        let float_model = model.f32_array();
+        let float_model: [f32; 16] = model.into();
         unsafe {
             gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, 0, float_model.as_ptr());
             gl::Uniform4f(get_uniform_location(self.shader_2d, "u_color"), 1.0, 1.0, 1.0, 1.0);
