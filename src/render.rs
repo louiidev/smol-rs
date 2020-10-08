@@ -87,6 +87,34 @@ impl Matrix {
         self.m0 *= scale.x;
 		self.m5 *= scale.y;
     }
+
+    fn ortho(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Self
+    {
+
+        let rl = right - left;
+        let tb = top - bottom;
+        let f_n = far - near;
+
+        Matrix {
+            m0: 2.0 / rl,
+            m1: 0.0,
+            m2: 0.0,
+            m3: 0.0,
+            m4: 0.0,
+            m5: 2.0 / tb,
+            m6: 0.0,
+            m7: 0.0,
+            m8: 0.0,
+            m9: 0.0,
+            m10: -2.0 / f_n,
+            m11: 0.0,
+            m12: -(left + right) / rl,
+            m13: -(top + bottom) / tb,
+            m14: -(far + near) / f_n,
+            m15: 1.0
+        }
+    }
+
 }
 
 pub struct Texture {
@@ -173,34 +201,6 @@ impl From<Vector2> for Vector3 {
 }
 
 pub struct Color (pub f32, pub f32, pub f32, pub f32);
-
-fn orthographic_projection(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Matrix
-{
-
-    let rl = right - left;
-    let tb = top - bottom;
-    let f_n = far - near;
-
-    Matrix {
-        m0: 2.0 / rl,
-        m1: 0.0,
-        m2: 0.0,
-        m3: 0.0,
-        m4: 0.0,
-        m5: 2.0 / tb,
-        m6: 0.0,
-        m7: 0.0,
-        m8: 0.0,
-        m9: 0.0,
-        m10: -2.0 / f_n,
-        m11: 0.0,
-        m12: -(left + right) / rl,
-        m13: -(top + bottom) / tb,
-        m14: -(far + near) / f_n,
-        m15: 1.0
-    }
-}
-
 
 fn get_uniform_location(shader: u32, name: &str) -> i32 {
     let c_str_name = CString::new(name).unwrap();
@@ -302,8 +302,8 @@ impl Renderer {
       
             gl::UseProgram(shader);
 
-            let proj = orthographic_projection(0.0, SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32, 0.0, -1.0, 1.0).f32_array();
-            gl::UniformMatrix4fv(get_uniform_location(shader, "projection"), 1, gl::FALSE, mem::transmute(&proj[0]));
+            let proj = Matrix::ortho(0.0, SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32, 0.0, -1.0, 1.0).f32_array();
+            gl::UniformMatrix4fv(get_uniform_location(shader, "projection"), 1, gl::FALSE, proj.as_ptr());
 
             gl::GenTextures(1, &mut white_tex_id);
             gl::BindTexture(gl::TEXTURE_2D, white_tex_id);
@@ -316,11 +316,11 @@ impl Renderer {
             
             gl::GenBuffers(1, &mut VBO);
             gl::BindBuffer(gl::ARRAY_BUFFER, VBO);
-            gl::BufferData(gl::ARRAY_BUFFER, (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize, mem::transmute(&VERTEX_DATA[0]), gl::STATIC_DRAW);
+            gl::BufferData(gl::ARRAY_BUFFER, (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize, &VERTEX_DATA[0] as *const f32 as *const c_void, gl::STATIC_DRAW);
     
             gl::GenBuffers(1, &mut IBO);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, IBO);
-            gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, (INDEX_DATA.len() * mem::size_of::<f32>()) as isize, mem::transmute(&INDEX_DATA[0]), gl::STATIC_DRAW);
+            gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, (INDEX_DATA.len() * mem::size_of::<f32>()) as isize, &INDEX_DATA[0] as *const u32 as *const c_void, gl::STATIC_DRAW);
     
             
             gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, 2 * mem::size_of::<f32>() as i32, ptr::null());
@@ -329,7 +329,7 @@ impl Renderer {
     
             gl::GenBuffers(1, &mut TBO);
             gl::BindBuffer(gl::ARRAY_BUFFER, TBO);
-            gl::BufferData(gl::ARRAY_BUFFER, (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize, mem::transmute(&VERTEX_DATA[0]), gl::DYNAMIC_DRAW);
+            gl::BufferData(gl::ARRAY_BUFFER, (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize, &VERTEX_DATA[0] as *const f32 as *const c_void, gl::DYNAMIC_DRAW);
     
             gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, 2 * mem::size_of::<f32>() as i32, ptr::null());
             gl::EnableVertexAttribArray(1);
@@ -376,7 +376,7 @@ impl Renderer {
 		let float_model = model.f32_array();
         unsafe {
             gl::UseProgram(self.shader_2d);
-            gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, gl::FALSE, mem::transmute(&float_model[0]));
+            gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, gl::FALSE, float_model.as_ptr());
             gl::Uniform4f(get_uniform_location(self.shader_2d, "u_color"), color.0 / 255., color.1 / 255., color.2 / 255.0, color.3 / 255.0);
 
             gl::ActiveTexture(gl::TEXTURE0);
@@ -401,7 +401,7 @@ impl Renderer {
         let float_model = model.f32_array();
         unsafe {
             gl::UseProgram(self.shader_2d);
-            gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, gl::FALSE, mem::transmute(&float_model[0]));
+            gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, gl::FALSE, float_model.as_ptr());
             gl::Uniform4f(get_uniform_location(self.shader_2d, "u_color"), 1.0, 1.0, 1.0, 1.0);
             
             gl::ActiveTexture(gl::TEXTURE0);
@@ -428,7 +428,7 @@ impl Renderer {
 
         unsafe {
             gl::UseProgram(self.shader_2d);
-            gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, gl::FALSE, mem::transmute(&float_model[0]));
+            gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, gl::FALSE, float_model.as_ptr());
             gl::Uniform4f(get_uniform_location(self.shader_2d, "u_color"), 1.0, 1.0, 1.0, 1.0);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.tbo);
         }
@@ -451,7 +451,7 @@ impl Renderer {
         ];
 
         unsafe {
-            gl::BufferSubData(gl::ARRAY_BUFFER, 0, (tex_coords.len() * mem::size_of::<f32>()) as isize, mem::transmute(&tex_coords[0]));
+            gl::BufferSubData(gl::ARRAY_BUFFER, 0, (tex_coords.len() * mem::size_of::<f32>()) as isize, &tex_coords[0] as *const f32 as *const c_void);
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindTexture(gl::TEXTURE_2D, texture.id);
             gl::BindVertexArray(self.vao);
@@ -460,7 +460,7 @@ impl Renderer {
 		
             // RESET BUFFER TO DEFAULT
             gl::BindBuffer(gl::ARRAY_BUFFER, self.tbo);
-            gl::BufferSubData(gl::ARRAY_BUFFER, 0, (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize, mem::transmute(&VERTEX_DATA[0]));
+            gl::BufferSubData(gl::ARRAY_BUFFER, 0, (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize, &VERTEX_DATA[0] as *const f32 as *const c_void);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindVertexArray(0);
             gl::UseProgram(0);
@@ -498,7 +498,7 @@ impl Renderer {
 		model.scale(Vector2 { x: dest.width as f32, y: dest.height as f32 });
         let float_model = model.f32_array();
         unsafe {
-            gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, 0, mem::transmute(&float_model[0]));
+            gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, 0, float_model.as_ptr());
             gl::Uniform4f(get_uniform_location(self.shader_2d, "u_color"), 1.0, 1.0, 1.0, 1.0);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.tbo);
         }
@@ -520,7 +520,7 @@ impl Renderer {
 			min.x, max.y
         ];
         unsafe {
-            gl::BufferSubData(gl::ARRAY_BUFFER, 0, (tex_coords.len() * mem::size_of::<f32>()) as isize, mem::transmute(&tex_coords[0]));
+            gl::BufferSubData(gl::ARRAY_BUFFER, 0, (tex_coords.len() * mem::size_of::<f32>()) as isize, &tex_coords[0] as *const f32 as *const c_void);
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindTexture(gl::TEXTURE_2D, texture.id);
             gl::BindVertexArray(self.vao);
@@ -529,7 +529,7 @@ impl Renderer {
 		
             // RESET BUFFER TO DEFAULT
             gl::BindBuffer(gl::ARRAY_BUFFER, self.tbo);
-            gl::BufferSubData(gl::ARRAY_BUFFER, 0, (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize, mem::transmute(&VERTEX_DATA[0]));
+            gl::BufferSubData(gl::ARRAY_BUFFER, 0, (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize, &VERTEX_DATA[0] as *const f32 as *const c_void);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindVertexArray(0);
             gl::UseProgram(0);
