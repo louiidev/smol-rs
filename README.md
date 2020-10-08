@@ -1,11 +1,22 @@
 # smol-rs
 
 
-Work in progress
-
-Plan is to make a small 2d framework to build games easily using Rust with a simple API, mainly targeting windows but should support other platforms.
+### Work in progress
 
 Renders using OpenGL
 
 SDL2 for platform layer
+
+
+### CURRENT GOALS
+
+ * Easy to use API
+ * Runs on most platforms but Windows is the main target
+ * Mostly 2D
+ 
+ 
+
+### LONG TERM GOALS
+* DirectX11 support
+* Build a game with it
 
