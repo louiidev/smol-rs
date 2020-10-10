@@ -53,8 +53,6 @@ static FS_SRC: &'_ str = "
         FragColor = texture(ourTexture, TexCoord) * u_color; 
     }";
 
-const SCREEN_WIDTH: u32 = 800;
-const SCREEN_HEIGHT: u32 = 600;
 
 
 #[derive(Debug)]
@@ -67,8 +65,6 @@ pub struct Texture {
 impl Texture {
     pub fn load_from_file(src: &str) -> Self {
         let mut texture_id = 0;
-        let img = image::open(src).expect("Could not load image at src: {}");
-        
 
         let (width, height, img_data, internal_format, format) = match image::open(src).expect("Could not load image at src: {}") {
             DynamicImage::ImageRgba8(img) => {
@@ -195,7 +191,8 @@ pub struct Renderer {
 	vbo: u32,
 	ibo: u32,
 	tbo: u32,
-	default_texture: Texture
+    default_texture: Texture,
+    screen_scale: Vector2,
 }
 
 impl Renderer {
@@ -216,10 +213,6 @@ impl Renderer {
         unsafe {
       
             gl::UseProgram(shader);
-
-            let proj: [f32; 16] = Matrix::ortho(0.0, SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32, 0.0, -1.0, 1.0).into();
-            gl::UniformMatrix4fv(get_uniform_location(shader, "projection"), 1, gl::FALSE, proj.as_ptr());
-
             gl::GenTextures(1, &mut white_tex_id);
             gl::BindTexture(gl::TEXTURE_2D, white_tex_id);
             gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA8 as i32, 1, 1, 0, gl::RGBA, gl::UNSIGNED_BYTE, &white_texture as *const _ as *const std::ffi::c_void);
@@ -270,6 +263,7 @@ impl Renderer {
                 height: 1,
                 id: white_tex_id
             },
+            screen_scale: Vector2::new(1.,1.),
         }
     }
 
@@ -280,8 +274,21 @@ impl Renderer {
         }
     }
 
-    pub fn set_viewport(width: u32, height: u32) {
-        unsafe { gl::Viewport(0, 0, width as i32, height as i32); };
+    pub fn set_viewport(x: f32, y: f32, width: u32, height: u32) {
+        unsafe { gl::Viewport(x as i32, y as i32, width as i32, height as i32); };
+    }
+
+    pub fn set_projection(&self, width: u32, height: u32) {
+        unsafe {
+            gl::UseProgram(self.shader_2d);
+            let proj: [f32; 16] = Matrix::ortho(0.0, width as f32, height as f32, 0.0, -1.0, 1.0).into();
+            gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "projection"), 1, gl::FALSE, proj.as_ptr());
+            gl::UseProgram(0);
+        }
+    }
+
+    pub fn set_scale(&mut self, scale: Vector2) {
+        self.screen_scale = scale;
     }
 
     pub fn rect(&self, rect: Rectangle, color: Color) {
@@ -410,7 +417,7 @@ impl Renderer {
             gl::UseProgram(self.shader_2d);
         }
 		let mut model = Matrix::translate(Vector3 { x: dest.x, y: dest.y, z: 0.0 });
-		model.scale(Vector2 { x: dest.width as f32, y: dest.height as f32 });
+		model.scale(Vector2 { x: dest.width as f32, y: dest.height as f32 } * self.screen_scale);
         let float_model: [f32; 16] = model.into();
         unsafe {
             gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, 0, float_model.as_ptr());

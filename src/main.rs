@@ -42,7 +42,6 @@ fn main() {
             temp_pos.normalize();
         }
 
-        // temp_pos.normalize();
         player_position+= temp_pos;
         clear();
         draw_sprite_from_atlas(&texture, player_position, Vector2Int { x: 24, y: 0}, 16);

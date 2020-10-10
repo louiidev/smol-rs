@@ -121,14 +121,14 @@ pub mod core {
     use sdl2::event::Event;
     use sdl2::video::GLContext;
     use sdl2::video::GLProfile;
+    use std::sync::Mutex;
+    use sdl2::event::WindowEvent;
 
     pub type Keycode = sdl2::keyboard::Keycode;
 
     lazy_static! {
-        static ref RENDER_CONTEXT: Renderer = {
-            let renderer = Renderer::default();
-            Renderer::set_viewport(800, 600);
-            renderer
+        static ref RENDER_CONTEXT: Mutex<Renderer> = {
+            Mutex::new(Renderer::default())
         };
     }
 
@@ -139,13 +139,17 @@ pub mod core {
         unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
     }
 
+    fn get_render_context() -> std::sync::MutexGuard<'static, render::Renderer> {
+        RENDER_CONTEXT.lock().unwrap()
+    }
+
 
     pub fn clear() {
         Renderer::clear(Color (0.3 * 255., 0.3 * 255., 0.5 * 255., 255.));
     }
 
     pub fn draw_rectangle() {
-        RENDER_CONTEXT.rect(
+        get_render_context().rect(
             Rectangle { x: 0., y: 0., width: 100., height: 100.},
             Color(255., 0.0, 0.0, 255.0)
         );
@@ -156,11 +160,11 @@ pub mod core {
     }
 
     pub fn draw_sprite(texture: &Texture, position: Vector2) {
-        RENDER_CONTEXT.texture(texture, position);
+        get_render_context().texture(texture, position);
     }
 
     pub fn draw_sprite_from_atlas(atlas: &Texture, position: Vector2, coords: Vector2Int, size: u32) {
-        RENDER_CONTEXT.atlas_sub_s(&atlas, coords.x, coords.y, size, position, 5.0)
+        get_render_context().atlas_sub_s(&atlas, coords.x, coords.y, size, position, 1.0)
     }
 
 
@@ -199,6 +203,19 @@ pub mod core {
                 Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     ctx.running = false;
                 },
+                Event::Window {
+                    win_event,
+                    ..
+                } => {
+                    match win_event {
+                        WindowEvent::Resized(w, h) => {
+                            println!("w: {} h: {}", w, h);
+                            Renderer::set_viewport(0.0, 0.0, w as u32, h as u32);
+                            get_render_context().set_projection(w as u32, h as u32);
+                        },
+                        _ => {}
+                    }
+                },
                 _ => {}
             }
         }
@@ -219,10 +236,15 @@ pub mod core {
         let gl_attr = video_subsystem.gl_attr();
         gl_attr.set_context_profile(GLProfile::Core);
         gl_attr.set_context_version(4, 1);
-        
-    
-        let window = video_subsystem.window("Window", 800, 600)
+        let virtual_width= 320;
+        let virtual_height= 180;
+
+        let screen_width = virtual_width * 1;  
+        let screen_height = virtual_height * 1; 
+        let window = video_subsystem.window("Window", screen_width, screen_height)
             .opengl()
+            .resizable()
+
             .build()
             .unwrap();
     
@@ -233,7 +255,43 @@ pub mod core {
         debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
         debug_assert_eq!(gl_attr.context_version(), (4, 1));
         let event_pump = sdl_context.event_pump().unwrap();
-        Renderer::set_viewport(800, 600);
+       
+
+
+
+        
+        
+        // This is your target virtual resolution for the game, the size you built your game to
+        let virtual_width= 320;
+        let virtual_height= 180;
+        
+        let target_aspect_ratio = (virtual_width/virtual_height) as f32;
+        
+        // figure out the largest area that fits in this resolution at the desired aspect ratio
+        let mut width = screen_width as f32;
+        let mut height = (width / target_aspect_ratio as f32)  + 0.5;
+        
+        if height > screen_height as f32
+        {
+        //It doesn't fit our height, we must switch to pillarbox then
+            height = screen_height as f32;
+            width = (height * target_aspect_ratio)  + 0.5;
+        }
+        
+        // set up the new viewport centered in the backbuffer
+        let vp_x = (screen_width as f32  / 2.) - (width / 2.);
+        let vp_y = (screen_height as f32 / 2.) - (height / 2.);
+        
+        Renderer::set_viewport(0.0, 0.0, screen_width as u32, screen_height as u32);
+        get_render_context().set_projection(screen_width, screen_height);
+        // get_render_context().set_scale(Vector2 {
+        //     x: (screen_width / virtual_width) as f32,
+        //     y: (screen_height / virtual_height) as f32
+        // });
+
+        
+
+
         unsafe {
             CONTEXT = Option::from(
                 Smol {
