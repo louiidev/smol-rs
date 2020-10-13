@@ -164,7 +164,7 @@ pub mod core {
     }
 
     pub fn draw_sprite_from_atlas(atlas: &Texture, position: Vector2, coords: Vector2Int, size: u32) {
-        get_render_context().atlas_sub_s(&atlas, coords.x, coords.y, size, position, 1.0)
+        get_render_context().atlas_sub_s(&atlas, coords.x, coords.y, size, position, 5.0)
     }
 
 
@@ -236,8 +236,8 @@ pub mod core {
         let gl_attr = video_subsystem.gl_attr();
         gl_attr.set_context_profile(GLProfile::Core);
         gl_attr.set_context_version(4, 1);
-        let virtual_width= 320;
-        let virtual_height= 180;
+        let virtual_width= 1200;
+        let virtual_height= 720;
 
         let screen_width = virtual_width * 1;  
         let screen_height = virtual_height * 1; 
