@@ -1,67 +1,12 @@
 pub mod render;
 pub mod math;
+pub mod events;
+pub mod components;
+pub mod input;
+
+// pub mod render_batch;
 use std::time::Instant;
-use std::collections::HashSet;
-use sdl2::keyboard::Keycode;
-use sdl2::mouse::MouseState;
-use sdl2::rect::Point;
-use sdl2::EventPump;
-
-pub struct Input {
-    pub keys_pressed: HashSet<Keycode>,
-    pub keys_down: HashSet<Keycode>,
-    keys_released: HashSet<Keycode>,
-    mouse_state: MouseState,
-}
-
-impl Input {
-    pub fn new() -> Self {
-        Input {
-            keys_pressed: HashSet::new(),
-            keys_down: HashSet::new(),
-            keys_released: HashSet::new(),
-            mouse_state: MouseState::from_sdl_state(0),
-        }
-    }
-}
-
-impl Input {
-    pub fn is_key_down(&self, key: Keycode) -> bool {
-        self.keys_down.contains(&key)
-    }
-
-    pub fn is_key_pressed(&self, key: Keycode) -> bool {
-        self.keys_pressed.contains(&key)
-    }
-
-    pub fn is_key_released(&self, key: Keycode) -> bool {
-        self.keys_released.contains(&key)
-    }
-
-    pub fn set_mouse_state(&mut self, events: &EventPump) {
-        let state = events.mouse_state();
-        self.mouse_state = state;
-    }
-
-    pub fn set_keys(&mut self, events: &EventPump) {
-        let keys = events
-            .keyboard_state()
-            .pressed_scancodes()
-            .filter_map(Keycode::from_scancode)
-            .collect();
-        let new_keys = &keys - &self.keys_down;
-        let old_keys = &self.keys_down - &keys;
-        self.keys_down = keys;
-        self.keys_pressed = new_keys;
-        self.keys_released = old_keys;
-
-  
-    }
-
-    pub fn get_mouse_pos(&mut self) -> Point {
-        Point::new(self.mouse_state.x(), self.mouse_state.y())
-    }
-}
+use crate::input::Input;
 
 #[derive(Debug)]
 pub struct TimeStep {
@@ -132,10 +77,10 @@ pub mod core {
         };
     }
 
-    static mut CONTEXT: Option<Smol> = None;
+    pub static mut CONTEXT: Option<Smol> = None;
 
 
-    fn get_context() -> &'static mut Smol {
+    pub fn get_context() -> &'static mut Smol {
         unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
     }
 
@@ -148,10 +93,9 @@ pub mod core {
         Renderer::clear(Color (0.3 * 255., 0.3 * 255., 0.5 * 255., 255.));
     }
 
-    pub fn draw_rectangle() {
+    pub fn render_rect(x: f32, y: f32, width: f32, height: f32, color: Color) {
         get_render_context().rect(
-            Rectangle { x: 0., y: 0., width: 100., height: 100.},
-            Color(255., 0.0, 0.0, 255.0)
+           width, height, x, y, color
         );
     }
 
@@ -159,17 +103,18 @@ pub mod core {
         Texture::load_from_file(src)
     }
 
-    pub fn draw_sprite(texture: &Texture, position: Vector2) {
+    pub fn render_texture(texture: &Texture, position: Vector2) {
         get_render_context().texture(texture, position);
     }
 
-    pub fn draw_sprite_from_atlas(atlas: &Texture, position: Vector2, coords: Vector2Int, size: u32) {
-        get_render_context().atlas_sub_s(&atlas, coords.x, coords.y, size, position, 5.0)
+    pub fn render_texture_partial(texture: &PartialTexture, position: Vector2) {
+        get_render_context().render_texture_partial(&texture, position);
     }
 
-
-    pub fn get_keys_pressed() {
-
+    pub fn get_screen_center() -> Vector2Int {
+        let ctx = get_context();
+        let (x, y) = ctx.window.size();
+        Vector2Int::new(x as i32 / 2, y as i32 / 2)
     }
 
 
@@ -209,7 +154,6 @@ pub mod core {
                 } => {
                     match win_event {
                         WindowEvent::Resized(w, h) => {
-                            println!("w: {} h: {}", w, h);
                             Renderer::set_viewport(0.0, 0.0, w as u32, h as u32);
                             get_render_context().set_projection(w as u32, h as u32);
                         },
@@ -236,15 +180,14 @@ pub mod core {
         let gl_attr = video_subsystem.gl_attr();
         gl_attr.set_context_profile(GLProfile::Core);
         gl_attr.set_context_version(4, 1);
-        let virtual_width= 1200;
-        let virtual_height= 720;
+        let virtual_width= 640;
+        let virtual_height= 480;
 
         let screen_width = virtual_width * 1;  
         let screen_height = virtual_height * 1; 
         let window = video_subsystem.window("Window", screen_width, screen_height)
             .opengl()
             .resizable()
-
             .build()
             .unwrap();
     
@@ -257,13 +200,9 @@ pub mod core {
         let event_pump = sdl_context.event_pump().unwrap();
        
 
-
-
-        
-        
         // This is your target virtual resolution for the game, the size you built your game to
-        let virtual_width= 320;
-        let virtual_height= 180;
+        let virtual_width= 640;
+        let virtual_height= 480;
         
         let target_aspect_ratio = (virtual_width/virtual_height) as f32;
         
@@ -307,13 +246,13 @@ pub mod core {
         };
     }
 
-    struct Smol {
+    pub struct Smol {
         pub running: bool,
         window: Window,
         event_pump: EventPump,
         _gl_context: GLContext,
         time_step: TimeStep,
-        input: Input,
+        pub input: Input,
         delta_time: f32,
     }
 }

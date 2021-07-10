@@ -1,12 +1,11 @@
 use smol_rs::core::*;
+use smol_rs::input::get_player_direction;
 use smol_rs::math::*;
+use smol_rs::render::{ FrameBuffer, Color};
+use smol_rs::components::{Physics, Weapon, Invulnerable, Transform};
+use smol_rs::events::{Events,  run_event_system_hecs, DamageAction };
 use std::collections::HashMap;
-
-struct GameState {
-    current_chunks: Vec<Vector2Int>,
-}
-
-struct MapChunk {}
+use hecs::World;
 
 enum Direction {
     UP,
@@ -22,138 +21,71 @@ impl Default for Direction {
 }
 
 #[derive(Default)]
-struct Player {
-    position: Vector2,
-    facing_direction: Direction,
-    moving: bool,
-    animation_frame: usize,
+struct MapChunk {
+    
 }
 
-
-struct Animation<T> {
-    frames: Vec<T>,
-    frame_time: f32
+#[derive(Default)]
+struct Map {
+    chunks: HashMap<Vector2Int, MapChunk>
 }
 
+impl Map {
+    pub fn try_get_chunk(&mut self, position: &Vector2Int) -> Option<&mut MapChunk> {
+        self.chunks.get_mut(position)
+    }
 
-struct AnimationSystem<T> {
-    animations: HashMap<T, Vec<Vector2Int>>,
-    current_state: T,
-    current_time: f32,
-}
-
-
-impl <T>AnimationSystem<T> where
-T: std::cmp::Eq
-    + std::hash::Hash
-    + std::clone::Clone
-    + std::fmt::Debug, {
-    fn register(&mut self, animation: T, frames: Vec<Vector2Int>) {
-        self.animations.insert(animation, frames);
+    pub fn add_new_chunk(&mut self, position: Vector2Int) {
+        self.chunks.insert(position, MapChunk{});
     }
 }
 
+
+fn example() {
+    let mut current_chunk_pos = Vector2Int::default();
+    let mut map = Map::default();
+    map.add_new_chunk(current_chunk_pos.clone());
+
+    current_chunk_pos.x+= 1;
+
+    let new_chunk = if let Some(chunk) = map.try_get_chunk(&current_chunk_pos) {
+        chunk
+    } else {
+        map.add_new_chunk(current_chunk_pos.clone());
+        map.try_get_chunk(&current_chunk_pos).unwrap()
+    };
+}
+
+
 fn main() {
     init();
-    let mut player = Player::default();
+    let mut world = World::new();
+    let mut player = world.reserve_entity();
+    let start_point = get_screen_center() - 16;
+    world.insert_one(player, Transform {
+        grid_position: start_point / 16,
+        screen_positon: start_point,
+    });
 
-    let player_animations = AnimationSystem {
-        animations: HashMap::new(),
-        current_state: Direction::DOWN,
-        current_time: 0.0
-    };
+    let frame_buffer = FrameBuffer::new(0, 0, 640 - 66, 180);
 
     let texture = load_texture("assets/tilemap_packed.png");
     while is_running() {
-        let mut temp_pos = Vector2::default();
-
-        if is_key_down(Keycode::W) {
-            temp_pos.y -= 0.25 * delta_time();
-            player.facing_direction = Direction::UP;
-        } else if is_key_down(Keycode::S) {
-            temp_pos.y += 0.25 * delta_time();
-            player.facing_direction = Direction::DOWN;
-        }
-
-        if is_key_down(Keycode::A) {
-            temp_pos.x -= 0.25 * delta_time();
-            player.facing_direction = Direction::LEFT;
-        } else if is_key_down(Keycode::D) {
-            temp_pos.x += 0.25 * delta_time();
-            player.facing_direction = Direction::RIGHT;
-        }
-
-        if temp_pos != Vector2::default() {
-            temp_pos.normalize();
-            player.moving = true;
-        } else {
-            player.moving = false;
-        }
-
-        player.position += temp_pos;
+        run_event_system_hecs(&mut world, player, &mut Events::Move(get_player_direction()));
         clear();
+        frame_buffer.bind();
+        clear();
+        
 
-        let player_sprite_coords = match player.facing_direction {
-            Direction::DOWN => {
-                if player.moving {
-                    let frames = [Vector2Int { x: 24, y: 1 }, Vector2Int { x: 24, y: 2 }];
-                    let next_frame = *frames.get(player.animation_frame).unwrap();
-                    player.animation_frame = if frames.len() - 1 == player.animation_frame {
-                        0
-                    } else {
-                        player.animation_frame + 1
-                    };
-                    println!("{}", player.animation_frame);
-                    next_frame
-                } else {
-                    Vector2Int { x: 24, y: 0 }
-                }
-            }
-            Direction::UP => {
-                if player.moving {
-                    let frames = [Vector2Int { x: 25, y: 1 },  Vector2Int { x: 25, y: 2 }];
-                    let next_frame = *frames.get(player.animation_frame).unwrap();
-                    player.animation_frame = if frames.len() - 1 == player.animation_frame {
-                        0
-                    } else {
-                        player.animation_frame + 1
-                    };
-                    next_frame
-                } else {
-                    Vector2Int { x: 25, y: 0 }
-                }
-            }
-            Direction::LEFT => {
-                if player.moving {
-                    let frames =[Vector2Int { x: 23, y: 1 },  Vector2Int { x: 23, y: 2 }];
-                    let next_frame = *frames.get(player.animation_frame).unwrap();
-                    player.animation_frame = if frames.len() - 1 == player.animation_frame {
-                        0
-                    } else {
-                        player.animation_frame + 1
-                    };
-                    next_frame
-                } else {
-                    Vector2Int { x: 23, y: 0 }
-                }
-            },
-            Direction::RIGHT => {
-                if player.moving {
-                    let frames = [Vector2Int { x: 26, y: 1 },  Vector2Int { x: 26, y: 2 }];
-                    let next_frame = *frames.get(player.animation_frame).unwrap();
-                    player.animation_frame = if frames.len() - 1 == player.animation_frame {
-                        0
-                    } else {
-                        player.animation_frame + 1
-                    };
-                    next_frame
-                } else {
-                    Vector2Int { x: 26, y: 0 }
-                }
-            },
-        };
+        let player_sprite_coords = Vector2Int { x: 384, y: 0 };
 
-        draw_sprite_from_atlas(&texture, player.position, player_sprite_coords, 16);
+        let partial_texture = &texture.create_partial(16, 16, player_sprite_coords);
+        
+        render_texture_partial(&partial_texture, world.get::<Transform>(player).unwrap().screen_positon.into());
+        render_rect(0., 0., 32., 32., Color(255., 255., 255., 100.));
+        frame_buffer.unbind();
+
+        render_texture(&frame_buffer.texture, Vector2 { x: 0., y: 64. });
         end_render();
     }
 }

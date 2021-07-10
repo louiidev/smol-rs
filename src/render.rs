@@ -55,14 +55,58 @@ static FS_SRC: &'_ str = "
 
 
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Texture {
     id: u32,
     width: u32,
     height: u32
 }
 
+#[derive(Debug, Clone)]
+pub struct PartialTexture {
+    texture_id: u32,
+    texture_width: u32,
+    texture_height: u32,
+    width: u32,
+    height: u32,
+    position: Vector2Int
+}
+
 impl Texture {
+    pub fn create_partial(&self, width: u32, height: u32, position: Vector2Int) -> PartialTexture {
+        PartialTexture {
+            texture_id: self.id,
+            texture_width: self.width,
+            texture_height: self.height,
+            width,
+            height,
+            position
+        }
+    }
+
+    pub fn new_empty(width: i32, height: i32) -> Self {
+        let mut texture_id = 0;
+        let t = Texture {
+            width: width as u32,
+            height: height as u32,
+            id: texture_id
+        };
+        
+        unsafe {
+            gl::GenTextures(1, &mut texture_id);
+            gl::BindTexture(gl::TEXTURE_2D, texture_id);
+            
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+            gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, width, height, 0, gl::RGB, gl::UNSIGNED_BYTE, ptr::null());
+            gl::GenerateMipmap(gl::TEXTURE_2D);
+            gl_check_errors();
+        };
+        t
+    }
+
     pub fn load_from_file(src: &str) -> Self {
         let mut texture_id = 0;
 
@@ -106,6 +150,90 @@ impl Texture {
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe { gl::DeleteTextures(1, &self.id); };
+    }
+}
+
+
+
+fn gl_check_errors()
+{
+    unsafe {
+        let mut error_code = gl::GetError();
+        while error_code != gl::NO_ERROR {
+            match error_code {
+                gl::INVALID_ENUM => println!("INVALID_ENUM"),
+                gl::INVALID_VALUE => println!("INVALID_VALUE"),
+                gl::INVALID_OPERATION => println!("INVALID_OPERATION"),
+                gl::STACK_OVERFLOW => println!("INVALID_ENUM"),
+                gl::STACK_UNDERFLOW => println!("INVALID_VALUE"),
+                gl::OUT_OF_MEMORY => println!("INVALID_OPERATION"),
+                gl::INVALID_FRAMEBUFFER_OPERATION => println!("INVALID_FRAMEBUFFER_OPERATION"),
+                _ => println!("unknow error for code: {}", error_code)
+            }
+
+            error_code = gl::GetError();
+        }
+    }
+}
+
+pub struct FrameBuffer {
+    pub texture: Texture,
+    id: u32
+}
+
+impl FrameBuffer {
+    pub fn new(x: i32, y: i32, width: i32, height: i32) -> Self {
+
+        let mut fbo_id: u32 = 0;
+        let texture = unsafe {
+            let mut default_draw_fbo = 0;
+            gl::GetIntegerv(gl::DRAW_FRAMEBUFFER_BINDING, &mut default_draw_fbo);
+            println!("default_draw_fbo: {} ", default_draw_fbo);
+            // Generate framebuffer
+            gl::GenFramebuffers(1, &mut fbo_id);
+            gl::Viewport(x, y, width, height);
+            gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, fbo_id);
+            // Create the texture to render the data to, and attach it to our framebuffer
+            let texture = Texture::new_empty(width, height);
+            gl::FramebufferTexture2D(gl::DRAW_FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, texture.id, 0);
+            gl_check_errors();
+            // Create renderbuffer store the depth info
+            let mut rbo_id: u32 = 0;
+            gl::GenRenderbuffers(1, &mut rbo_id);
+            gl::BindRenderbuffer(gl::RENDERBUFFER, rbo_id);
+            gl::RenderbufferStorage(gl::RENDERBUFFER, gl::DEPTH_COMPONENT32, width, height);
+            gl::FramebufferRenderbuffer(gl::DRAW_FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::RENDERBUFFER, rbo_id);
+
+
+            if gl::CheckFramebufferStatus(gl::DRAW_FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
+                panic!("ERROR IN OPENGL FRAME BUFFER");   
+            }
+            
+           
+            println!("fbo_id: {} ", fbo_id);
+            
+            gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, default_draw_fbo as u32);
+            
+            texture
+        };
+        FrameBuffer {
+            texture,
+            id: fbo_id,
+        }
+    }
+
+    pub fn bind(&self) {
+        unsafe { gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, self.id); }
+    }
+
+    pub fn unbind(&self) {
+        unsafe { gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, 0); }
+    }
+}
+
+impl Drop for FrameBuffer {
+    fn drop(&mut self) {
+        unsafe { gl::DeleteFramebuffers(1, &self.id); };
     }
 }
 
@@ -267,10 +395,11 @@ impl Renderer {
         }
     }
 
+
     pub fn clear(color: Color) {
         unsafe {
             gl::ClearColor(color.0 / 255., color.1 / 255., color.2 / 255., color.3 /255.);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
     }
 
@@ -291,10 +420,10 @@ impl Renderer {
         self.screen_scale = scale;
     }
 
-    pub fn rect(&self, rect: Rectangle, color: Color) {
+    pub fn rect(&self, width: f32, height: f32, x: f32, y: f32, color: Color) {
         
-		let mut model = Matrix::translate(Vector3 { x: rect.x, y: rect.y, z: 0.0 });
-		model.scale(Vector2{ x: rect.width, y: rect.height });
+		let mut model = Matrix::translate(Vector3 { x, y, z: 0.0 });
+		model.scale(Vector2{ x: width, y: height });
 		let float_model: [f32; 16] = model.into();
         unsafe {
             gl::UseProgram(self.shader_2d);
@@ -312,7 +441,7 @@ impl Renderer {
     }
 
     pub fn texture(&self, texture: &Texture, position: Vector2) {
-        Renderer::texture_scale(self, texture, position.clone(), 1.0);
+        Renderer::texture_scale(self, texture, position, 1.0);
     }
 
     pub fn texture_scale(&self, texture: &Texture, position: Vector2, scale: f32) {
@@ -330,6 +459,7 @@ impl Renderer {
             gl::BindTexture(gl::TEXTURE_2D, texture.id);
             gl::BindVertexArray(self.vao);
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
+            gl_check_errors();
             gl::BindVertexArray(0);
             //Unbind program
             gl::UseProgram(0);
@@ -389,35 +519,31 @@ impl Renderer {
         };
     }
 
-    pub fn atlas_sub(&self, texture: &Texture, x_pos: u32, y_pos: u32, texture_size: u32, position: Vector2) {
-        Renderer::atlas_sub_s(self, texture, x_pos, y_pos, texture_size, position, 1.0);
-    }
-
-    pub fn atlas_sub_s(&self, texture: &Texture, x_pos: u32, y_pos: u32, texture_size: u32, position: Vector2, scale: f32) {
+    pub fn render_texture_partial(&self, texture: &PartialTexture, position: Vector2) {
 
         let source = Rectangle {
-            x: x_pos as f32,
-            y: y_pos as f32,
-            width: texture_size as f32,
-            height: texture_size as f32
+            x: texture.position.x as f32,
+            y: texture.position.y as f32,
+            width: texture.width as f32,
+            height: texture.height as f32
         };
 
         let dest = Rectangle {
             x: position.x,
             y: position.y,
-            width: texture_size as f32 * scale,
-            height: texture_size as f32 * scale
+            width: texture.width as f32 * 1.,
+            height: texture.width as f32 * 1.
         };
 
-        Renderer::atlas_sub_rect(self, texture, source, dest);
+        Renderer::atlas_sub_rect(self, texture.texture_id, texture.texture_width, texture.texture_height, source, dest);
     }
 
-    pub fn atlas_sub_rect(&self, texture: &Texture, sub_texture_data: Rectangle, dest: Rectangle) {
+    pub fn atlas_sub_rect(&self, texture_id: u32, texture_width: u32, texture_height: u32, sub_texture_data: Rectangle, dest: Rectangle) {
         unsafe {
             gl::UseProgram(self.shader_2d);
         }
 		let mut model = Matrix::translate(Vector3 { x: dest.x, y: dest.y, z: 0.0 });
-		model.scale(Vector2 { x: dest.width as f32, y: dest.height as f32 } * self.screen_scale);
+		model.scale(Vector2 { x: dest.width as f32, y: dest.height as f32 });
         let float_model: [f32; 16] = model.into();
         unsafe {
             gl::UniformMatrix4fv(get_uniform_location(self.shader_2d, "model"), 1, 0, float_model.as_ptr());
@@ -426,13 +552,13 @@ impl Renderer {
         }
 
         let min = Vector2  {
-            x: (sub_texture_data.x * sub_texture_data.width) / texture.width as f32,
-            y: (sub_texture_data.y * sub_texture_data.height) / texture.height as f32
+            x: sub_texture_data.x / texture_width as f32,
+            y: sub_texture_data.y / texture_height as f32
         };
 
         let max = Vector2 {
-            x: (sub_texture_data.x + 1.) * sub_texture_data.width / texture.width as f32,
-            y: (sub_texture_data.y + 1.0) * sub_texture_data.height / texture.height as f32
+            x: (sub_texture_data.x + sub_texture_data.width) / texture_width as f32,
+            y: (sub_texture_data.y + sub_texture_data.height) /texture_height as f32
         };
 
 		let tex_coords: [f32; 8] = [
@@ -444,7 +570,7 @@ impl Renderer {
         unsafe {
             gl::BufferSubData(gl::ARRAY_BUFFER, 0, (tex_coords.len() * mem::size_of::<f32>()) as isize, &tex_coords[0] as *const f32 as *const c_void);
             gl::ActiveTexture(gl::TEXTURE0);
-            gl::BindTexture(gl::TEXTURE_2D, texture.id);
+            gl::BindTexture(gl::TEXTURE_2D, texture_id);
             gl::BindVertexArray(self.vao);
 
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
