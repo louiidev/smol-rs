@@ -1,4 +1,4 @@
-use crate::{events::DamageAction, math::{Vector2Int}};
+use crate::{events::DamageAction, math::{Vector2Int, Vector2}};
 
 const GRID_SIZE_PIXELS: i32 = 16;
 
@@ -28,10 +28,11 @@ pub struct Weapon {
 }
 
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Transform {
-    pub screen_positon: Vector2Int,
+    pub screen_positon: Vector2,
     pub grid_position: Vector2Int,
+    pub scale: Vector2,
 }
 
 impl Transform {
@@ -40,6 +41,7 @@ impl Transform {
     }
     pub fn move_pos(&mut self, direction: Vector2Int) {
         self.grid_position+= direction;
-        self.screen_positon+= direction * GRID_SIZE_PIXELS;
+        let screen_pos: Vector2 = direction.into();
+        self.screen_positon+= screen_pos * GRID_SIZE_PIXELS as f32;
     }
 }

@@ -4,11 +4,19 @@ version = "0.1.0"
 authors = ["louisgjohnson <louisgjohnson@gmail.com>"]
 edition = "2018"
 
+[build-dependencies]
+asefile = "0.2.0"
+image = "0.23.14"
+texture_packer = "0.23.0"
+
 [dependencies]
 gl = "0.14.0"
-image = "0.23.10"
 lazy_static = "1.4.0"
 hecs = "0.5.2"
+asefile = "0.2.0"
+image = "0.23.14"
+texture_packer = "0.23.0"
+rand = "*"
 
 [dependencies.sdl2]
 version = "0.34"

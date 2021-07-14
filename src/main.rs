@@ -4,21 +4,15 @@ use smol_rs::math::*;
 use smol_rs::render::{ FrameBuffer, Color};
 use smol_rs::components::{Physics, Weapon, Invulnerable, Transform};
 use smol_rs::events::{Events,  run_event_system_hecs, DamageAction };
+use smol_rs::render_batch::{ Sprite, RenderBatch};
 use std::collections::HashMap;
 use hecs::World;
+use smol_rs::texture_packer::{ AsepritePackerConfig, AsespritePacker };
+use rand::{self, Rng};
 
-enum Direction {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-}
 
-impl Default for Direction {
-    fn default() -> Self {
-        Direction::DOWN
-    }
-}
+const TILE_SIZE: u32 = 16;
+
 
 #[derive(Default)]
 struct MapChunk {
@@ -60,32 +54,58 @@ fn example() {
 fn main() {
     init();
     let mut world = World::new();
-    let mut player = world.reserve_entity();
-    let start_point = get_screen_center() - 16;
+    let player = world.reserve_entity();
     world.insert_one(player, Transform {
-        grid_position: start_point / 16,
-        screen_positon: start_point,
-    });
+        grid_position: Vector2Int::new(0, 0),
+        screen_positon: Vector2::new(0., 0.),
+        scale: Vector2::new(1., 1.)
+    }).expect("Couldnt insert entity for player");
 
-    let frame_buffer = FrameBuffer::new(0, 0, 640 - 66, 180);
+    let mut batch = RenderBatch::default();
 
-    let texture = load_texture("assets/tilemap_packed.png");
+    let texture = load_texture_from_bytes(include_bytes!("../assets/atlas.png"));
+    let frame_buffer = FrameBuffer::new(640 * 2, 480 * 2);
+    // println!("texture id:{:?}", texture);
+
+    let dot_texture = &texture.create_partial(16, 16, Vector2Int::new(0, 0));
+    let grass_texture = &texture.create_partial(16, 16, Vector2Int::new(0, 0));
+    let mut rng = rand::thread_rng();
+
     while is_running() {
         run_event_system_hecs(&mut world, player, &mut Events::Move(get_player_direction()));
-        clear();
-        frame_buffer.bind();
-        clear();
-        
+        clear(Color (3., 31., 30., 255.));
 
-        let player_sprite_coords = Vector2Int { x: 384, y: 0 };
+        // batch.add_sprite(&Sprite {
+        //     color: Color(100., 100., 100., 255.),
+        //     transform: Transform {
+        //         grid_position: Vector2Int::new(0, 0),
+        //         screen_positon: Vector2::new(0., 0.),
+        //         scale: Vector2::new(1., 1.)
+        //     }
+        // });
 
+        //batch.render();
+        frame_buffer.bind(640 * 2, 480 * 2);
+        clear(Color (3., 31., 30., 255.));
+        let player_sprite_coords = Vector2Int { x: 32, y:0 };
         let partial_texture = &texture.create_partial(16, 16, player_sprite_coords);
-        
-        render_texture_partial(&partial_texture, world.get::<Transform>(player).unwrap().screen_positon.into());
-        render_rect(0., 0., 32., 32., Color(255., 255., 255., 100.));
+        for x in 0..(640/16) {
+            for y in 0..(480/16) {
+                let value = rng.gen_range(0..=1);
+                if value == 0 {
+                    render_texture_partial(&dot_texture, Vector2::new(x as f32 * 16., y as f32 * 16.));
+                } else {
+                    render_texture_partial(&grass_texture, Vector2::new(x as f32 * 16., y as f32 * 16.));
+                }
+                    
+            }
+        }
+        render_texture_partial(&partial_texture, world.get::<Transform>(player).unwrap().screen_positon.into());     
+        // render_rect(world.get::<Transform>(player).unwrap().screen_positon.x as f32, world.get::<Transform>(player).unwrap().screen_positon.y as f32,16., 16., Color(255., 255., 255., 100.));
         frame_buffer.unbind();
-
-        render_texture(&frame_buffer.texture, Vector2 { x: 0., y: 64. });
+        
+        render_framebuffer_scale(&frame_buffer.texture, Vector2 { x: 0., y: 0. }, Vector2::new(5., 5.));
+        // render_texture(&texture, Vector2 { x: 0., y: 0.});
         end_render();
     }
 }

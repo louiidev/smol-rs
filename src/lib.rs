@@ -3,8 +3,8 @@ pub mod math;
 pub mod events;
 pub mod components;
 pub mod input;
-
-// pub mod render_batch;
+pub mod texture_packer;
+pub mod render_batch;
 use std::time::Instant;
 use crate::input::Input;
 
@@ -89,8 +89,12 @@ pub mod core {
     }
 
 
-    pub fn clear() {
-        Renderer::clear(Color (0.3 * 255., 0.3 * 255., 0.5 * 255., 255.));
+    pub fn clear(color: Color) {
+        Renderer::clear(color);
+    }
+
+    pub fn render_framebuffer_scale(texture: &Texture, position: Vector2, scale: Vector2) {
+        get_render_context().framebuffer_texture_scale(texture, position, scale);
     }
 
     pub fn render_rect(x: f32, y: f32, width: f32, height: f32, color: Color) {
@@ -103,13 +107,28 @@ pub mod core {
         Texture::load_from_file(src)
     }
 
+    pub fn load_texture_from_bytes(bytes: &[u8]) -> Texture {
+        Texture::load_from_bytes(bytes)
+    }
+
     pub fn render_texture(texture: &Texture, position: Vector2) {
         get_render_context().texture(texture, position);
     }
 
+    pub fn render_texture_scale(texture: &Texture, position: Vector2, scale: f32) {
+        get_render_context().texture_scale(texture, position, scale);
+    }
+
+    
+
+
     pub fn render_texture_partial(texture: &PartialTexture, position: Vector2) {
         get_render_context().render_texture_partial(&texture, position);
     }
+
+    // pub fn render_texture_to_rect(texture: &Texture, position: Vector2, ) {
+    //     get_render_context().texture_rect_scale(&texture, )
+    // }
 
     pub fn get_screen_center() -> Vector2Int {
         let ctx = get_context();
@@ -141,7 +160,7 @@ pub mod core {
 
     pub fn end_render() {
         let ctx = get_context();
-        ctx.delta_time = ctx.time_step.delta() as f32;;
+        ctx.delta_time = ctx.time_step.delta() as f32;
         ctx.window.gl_swap_window();
         for event in ctx.event_pump.poll_iter() {
             match event {
@@ -155,7 +174,7 @@ pub mod core {
                     match win_event {
                         WindowEvent::Resized(w, h) => {
                             Renderer::set_viewport(0.0, 0.0, w as u32, h as u32);
-                            get_render_context().set_projection(w as u32, h as u32);
+                            get_render_context().set_projection(w as f32, h as f32);
                         },
                         _ => {}
                     }
@@ -183,8 +202,8 @@ pub mod core {
         let virtual_width= 640;
         let virtual_height= 480;
 
-        let screen_width = virtual_width * 1;  
-        let screen_height = virtual_height * 1; 
+        let screen_width = virtual_width * 2;  
+        let screen_height = virtual_height * 2; 
         let window = video_subsystem.window("Window", screen_width, screen_height)
             .opengl()
             .resizable()
@@ -199,38 +218,9 @@ pub mod core {
         debug_assert_eq!(gl_attr.context_version(), (4, 1));
         let event_pump = sdl_context.event_pump().unwrap();
        
-
-        // This is your target virtual resolution for the game, the size you built your game to
-        let virtual_width= 640;
-        let virtual_height= 480;
-        
-        let target_aspect_ratio = (virtual_width/virtual_height) as f32;
-        
-        // figure out the largest area that fits in this resolution at the desired aspect ratio
-        let mut width = screen_width as f32;
-        let mut height = (width / target_aspect_ratio as f32)  + 0.5;
-        
-        if height > screen_height as f32
-        {
-        //It doesn't fit our height, we must switch to pillarbox then
-            height = screen_height as f32;
-            width = (height * target_aspect_ratio)  + 0.5;
-        }
-        
-        // set up the new viewport centered in the backbuffer
-        let vp_x = (screen_width as f32  / 2.) - (width / 2.);
-        let vp_y = (screen_height as f32 / 2.) - (height / 2.);
-        
         Renderer::set_viewport(0.0, 0.0, screen_width as u32, screen_height as u32);
-        get_render_context().set_projection(screen_width, screen_height);
-        // get_render_context().set_scale(Vector2 {
-        //     x: (screen_width / virtual_width) as f32,
-        //     y: (screen_height / virtual_height) as f32
-        // });
-
+        get_render_context().set_projection(screen_width as f32, screen_height as f32);
         
-
-
         unsafe {
             CONTEXT = Option::from(
                 Smol {
