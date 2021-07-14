@@ -15,6 +15,18 @@ pub struct Vector2 {
     pub y: f32
 }
 
+impl std::hash::Hash for Vector2 {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: std::hash::Hasher,
+    {
+        state.write_i32(self.x as i32);
+        state.finish();
+    }
+}
+
+impl Eq for Vector2 {}
+
 impl Vector2 {
     pub fn new(x: f32, y: f32) -> Self {
         Vector2 {

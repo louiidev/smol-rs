@@ -8,6 +8,8 @@ edition = "2018"
 asefile = "0.2.0"
 image = "0.23.14"
 texture_packer = "0.23.0"
+ron="*"
+serde="*"
 
 [dependencies]
 gl = "0.14.0"
@@ -17,6 +19,8 @@ asefile = "0.2.0"
 image = "0.23.14"
 texture_packer = "0.23.0"
 rand = "*"
+ron="*"
+serde="*"
 
 [dependencies.sdl2]
 version = "0.34"

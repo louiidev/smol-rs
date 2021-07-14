@@ -1,10 +1,12 @@
-use asefile::{AsepriteFile, AsepriteParseError, Frame};
+use asefile::{AsepriteFile };
 use std::{fs, io::Write, path::PathBuf};
-use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
-use std::{collections::HashMap, fs::File, path::Path};
+use image::{DynamicImage, ImageBuffer, Rgba};
+use std::{collections::HashMap,  path::Path};
 use texture_packer::{exporter::ImageExporter, TexturePacker, TexturePackerConfig };
+use serde::{Serialize, Deserialize};
+use ron::{ser::{PrettyConfig, to_string_pretty}};
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AseTextureData {
     pub width: u32,
     pub height: u32,
@@ -27,7 +29,7 @@ pub struct AsespritePacker {
 }
 
 impl AsespritePacker {
-    pub fn new() -> Self {
+    pub fn new() {
 
         let texture_packer_config = TexturePackerConfig {
             max_width: std::u32::MAX,
@@ -73,9 +75,12 @@ impl AsespritePacker {
                     
                     for frame_num in 0..ase.num_frames() {
                         let frame = ase.frame(frame_num);
-                        let key: String = format!("{}_{}", file.name.to_string(), frame_num);
+                        let key: String = if ase.num_frames() > 1 {
+                            format!("{}_{}", file.name.to_string(), frame_num)
+                        } else {
+                            file.name.to_string()
+                        };
                         let texture =   image::imageops::flip_vertical(&frame.image());
-                      
                         let _res = packer.pack_own(key.clone(), texture);
                         let frame_data = packer.get_frame(&key).unwrap();
                         let source = frame_data.frame;
@@ -107,18 +112,17 @@ impl AsespritePacker {
         });
 
         let mut file = std::fs::File::create(Path::new("assets/atlas.png")).unwrap();
-            image
-                .write_to(&mut file, image::ImageFormat::Png)
-                .unwrap();
-            println!("Output texture stored in {:?}", file);
-
-        let ase_packer = AsespritePacker {
-            packed_texture_data,
-            image
-        };
+        image
+            .write_to(&mut file, image::ImageFormat::Png)
+            .unwrap();
+        println!("Output texture stored in {:?}", file);
 
 
-        ase_packer
+        let mut file = std::fs::File::create(Path::new("assets/atlas.ron")).unwrap();
+        let str = to_string_pretty(&packed_texture_data, PrettyConfig::default()).unwrap();
+        file.write_all(str.as_bytes());
+        println!("Output texture stored in {:?}", file);
+
     }
   
 }

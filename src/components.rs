@@ -42,6 +42,7 @@ impl Transform {
     pub fn move_pos(&mut self, direction: Vector2Int) {
         self.grid_position+= direction;
         let screen_pos: Vector2 = direction.into();
-        self.screen_positon+= screen_pos * GRID_SIZE_PIXELS as f32;
+        self.screen_positon+= Vector2::new(screen_pos.x * 16., screen_pos.y * 24.);
+        // self.screen_positon+= screen_pos * GRID_SIZE_PIXELS as f32;
     }
 }

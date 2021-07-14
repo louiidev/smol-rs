@@ -453,10 +453,11 @@ pub struct Renderer {
     tbo: u32,
     default_texture: Texture,
     screen_scale: Vector2,
+    frame_buffer: FrameBuffer,
 }
 
 impl Renderer {
-    pub fn default() -> Self {
+    pub fn default(w: i32, h: i32) -> Self {
         let white_texture: u32 = 0xffffffff;
         let mut white_tex_id: u32 = 0;
 
@@ -556,6 +557,7 @@ impl Renderer {
                 id: white_tex_id,
             },
             screen_scale: Vector2::new(1., 1.),
+            frame_buffer: FrameBuffer::new(w, h)
         }
     }
 
@@ -571,10 +573,11 @@ impl Renderer {
         }
     }
 
-    pub fn set_viewport(x: f32, y: f32, width: u32, height: u32) {
+    pub fn set_viewport(&mut self, x: f32, y: f32, width: u32, height: u32) {
         unsafe {
             gl::Viewport(x as i32, y as i32, width as i32, height as i32);
         };
+        self.frame_buffer = FrameBuffer::new(width as i32, height as i32);
     }
 
     pub fn set_projection(&self, width: f32, height: f32) {

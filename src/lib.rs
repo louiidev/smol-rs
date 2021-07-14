@@ -71,11 +71,16 @@ pub mod core {
 
     pub type Keycode = sdl2::keyboard::Keycode;
 
+    const W: i32 = 640 * 2;
+    const H: i32 = 480 * 2;
+
     lazy_static! {
         static ref RENDER_CONTEXT: Mutex<Renderer> = {
-            Mutex::new(Renderer::default())
+            Mutex::new(Renderer::default(W, H))
         };
     }
+
+
 
     pub static mut CONTEXT: Option<Smol> = None;
 
@@ -173,8 +178,10 @@ pub mod core {
                 } => {
                     match win_event {
                         WindowEvent::Resized(w, h) => {
-                            Renderer::set_viewport(0.0, 0.0, w as u32, h as u32);
+                            get_render_context().set_viewport(0.0, 0.0, w as u32, h as u32);
                             get_render_context().set_projection(w as f32, h as f32);
+                            ctx.window_size.x = w;
+                            ctx.window_size.y = h;
                         },
                         _ => {}
                     }
@@ -199,12 +206,10 @@ pub mod core {
         let gl_attr = video_subsystem.gl_attr();
         gl_attr.set_context_profile(GLProfile::Core);
         gl_attr.set_context_version(4, 1);
-        let virtual_width= 640;
-        let virtual_height= 480;
 
-        let screen_width = virtual_width * 2;  
-        let screen_height = virtual_height * 2; 
-        let window = video_subsystem.window("Window", screen_width, screen_height)
+        let screen_width = W;  
+        let screen_height = H; 
+        let window = video_subsystem.window("Window", W as u32, H as u32)
             .opengl()
             .resizable()
             .build()
@@ -215,10 +220,9 @@ pub mod core {
         gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
         let _ = video_subsystem.gl_set_swap_interval(SwapInterval::VSync);
         debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
-        debug_assert_eq!(gl_attr.context_version(), (4, 1));
         let event_pump = sdl_context.event_pump().unwrap();
        
-        Renderer::set_viewport(0.0, 0.0, screen_width as u32, screen_height as u32);
+        get_render_context().set_viewport(0.0, 0.0, screen_width as u32, screen_height as u32);
         get_render_context().set_projection(screen_width as f32, screen_height as f32);
         
         unsafe {
@@ -230,7 +234,11 @@ pub mod core {
                     _gl_context,
                     time_step: TimeStep::new(),
                     delta_time: 0.0,
-                    input: Input::new()
+                    input: Input::new(),
+                    window_size: Vector2Int {
+                        x: screen_width as i32,
+                        y: screen_height as i32
+                    }
                 }
             )
         };
@@ -244,6 +252,7 @@ pub mod core {
         time_step: TimeStep,
         pub input: Input,
         delta_time: f32,
+        window_size: Vector2Int
     }
 }
 
