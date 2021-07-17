@@ -1,5 +1,4 @@
 use std::ffi::c_void;
-use std::ffi::CString;
 use std::mem;
 use std::ptr;
 use std::str;
@@ -165,11 +164,12 @@ impl RenderBatch {
             verticies[offset] = position.x + x_add;
             verticies[offset + 1] = position.y + y_add;
 
+            let gl_color = color.into_gl();
             // load color
-            verticies[offset + 2] = color.0;
-            verticies[offset + 3] = color.1;
-            verticies[offset + 4] = color.2;
-            verticies[offset + 5] = color.3;
+            verticies[offset + 2] = gl_color.0;
+            verticies[offset + 3] = gl_color.1;
+            verticies[offset + 4] = gl_color.2;
+            verticies[offset + 5] = gl_color.3;
             println!("{:?}", offset);
             offset += VERTEX_SIZE as usize;
         }
@@ -194,12 +194,12 @@ impl RenderBatch {
                 sprite.transform.screen_positon.x + (x_add * sprite.transform.scale.x);
             self.verticies[offset + 1] =
                 sprite.transform.screen_positon.y + (y_add * sprite.transform.scale.y);
-
+            let gl_color = sprite.color.into_gl();
             // load color
-            self.verticies[offset + 2] = sprite.color.0;
-            self.verticies[offset + 3] = sprite.color.1;
-            self.verticies[offset + 4] = sprite.color.2;
-            self.verticies[offset + 5] = sprite.color.3;
+            self.verticies[offset + 2] = gl_color.0;
+            self.verticies[offset + 3] = gl_color.1;
+            self.verticies[offset + 4] = gl_color.2;
+            self.verticies[offset + 5] = gl_color.3;
             println!("{:?}", offset);
             offset += VERTEX_SIZE as usize;
         }

@@ -5,6 +5,13 @@ pub mod components;
 pub mod input;
 pub mod texture_packer;
 pub mod render_batch;
+pub mod systems;
+pub mod ai;
+pub mod world_setup;
+pub mod map;
+pub mod text_render;
+
+
 use std::time::Instant;
 use crate::input::Input;
 
@@ -71,8 +78,15 @@ pub mod core {
 
     pub type Keycode = sdl2::keyboard::Keycode;
 
-    const W: i32 = 640 * 2;
-    const H: i32 = 480 * 2;
+    pub const DEFAULT_SCALE: i32 = 3;
+
+    pub const RENDER_RES_W: i32 = 320;
+    pub const RENDER_RES_H: i32 = 240;
+
+    const W: i32 = RENDER_RES_W * DEFAULT_SCALE;
+    const H: i32 = RENDER_RES_H * DEFAULT_SCALE;
+
+    
 
     lazy_static! {
         static ref RENDER_CONTEXT: Mutex<Renderer> = {
@@ -89,7 +103,7 @@ pub mod core {
         unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
     }
 
-    fn get_render_context() -> std::sync::MutexGuard<'static, render::Renderer> {
+    pub fn get_render_context() -> std::sync::MutexGuard<'static, render::Renderer> {
         RENDER_CONTEXT.lock().unwrap()
     }
 
@@ -125,8 +139,6 @@ pub mod core {
     }
 
     
-
-
     pub fn render_texture_partial(texture: &PartialTexture, position: Vector2) {
         get_render_context().render_texture_partial(&texture, position);
     }
@@ -134,6 +146,33 @@ pub mod core {
     // pub fn render_texture_to_rect(texture: &Texture, position: Vector2, ) {
     //     get_render_context().texture_rect_scale(&texture, )
     // }
+
+    pub fn capture_framebuffer() {
+        get_render_context().frame_buffer.bind();
+    }
+
+    pub fn stop_capture_framebuffer() {
+        get_render_context().frame_buffer.unbind();
+    }
+
+    pub fn render_framebuffer(position: Vector2, scale: f32) {
+        let render_context = get_render_context();
+        let texture = &render_context.frame_buffer.texture;
+        
+        render_context.texture_scale(texture, position, scale);
+    }
+
+    pub fn get_window_size() -> Vector2Int {
+        get_context().window_size
+    }
+
+
+    pub fn get_window_scale() -> f32 {
+        let pixel_size = Vector2 { x: RENDER_RES_W as f32, y: RENDER_RES_H as f32 };
+        let window_size: Vector2 = get_context().window_size.into();
+        let value = (window_size / pixel_size).x;
+        f32::min(f32::max(2., value), 5.)
+    }
 
     pub fn get_screen_center() -> Vector2Int {
         let ctx = get_context();

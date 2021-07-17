@@ -1,10 +1,14 @@
 use std::collections::HashSet;
+use hecs::{Entity, World};
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::MouseState;
 use sdl2::rect::Point;
 use sdl2::EventPump;
+use crate::components::Actor;
 use crate::core::get_context;
+use crate::events::{Action, Events};
 use crate::math::Vector2Int;
+use crate::systems::run_actor_actions;
 
 pub struct Input {
     pub input_previous_keyboard_state: HashSet<Keycode>,
@@ -52,6 +56,36 @@ impl Input {
 
     pub fn get_mouse_pos(&mut self) -> Point {
         Point::new(self.mouse_state.x(), self.mouse_state.y())
+    }
+}
+
+
+pub fn query_player_input(world: &mut World, player: Entity) {
+    let mut temp_pos = Vector2Int::default();
+    let input = &get_context().input;
+    if input.is_key_down(Keycode::W) {
+        temp_pos.y -= 1;
+    } else if input.is_key_down(Keycode::S) {
+        temp_pos.y += 1;
+    }
+
+    if input.is_key_down(Keycode::A) {
+        temp_pos.x -= 1;
+    } else if input.is_key_down(Keycode::D) {
+        temp_pos.x += 1;
+    }
+
+    if temp_pos != Vector2Int::default() {
+        {
+            let mut actor = world.get_mut::<Actor>(player).unwrap();
+            actor.action = Some(Action {
+                cost: 1.,
+                action: Events::Move(temp_pos)
+            });
+        }
+        
+
+        run_actor_actions(world);
     }
 }
 

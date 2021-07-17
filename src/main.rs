@@ -1,82 +1,37 @@
 use smol_rs::core::*;
-use smol_rs::input::get_player_direction;
+use smol_rs::input::{ query_player_input};
 use smol_rs::math::*;
-use smol_rs::render::{Color, FrameBuffer, PartialTexture};
-use smol_rs::components::{Physics, Weapon, Invulnerable, Transform};
-use smol_rs::events::{Events,  run_event_system_hecs, DamageAction };
-use smol_rs::render_batch::{ Sprite, RenderBatch};
+use smol_rs::render::*;
+use smol_rs::components::{SpriteRenderer, Transform};
+use smol_rs::text_render::TextRenderer;
+use smol_rs::world_setup::setup_world;
 use std::collections::HashMap;
-use hecs::World;
-use smol_rs::texture_packer::{AseTextureData, TexturePacker};
+use smol_rs::texture_packer::{TexturePacker};
 use rand::{self, Rng};
 
 
-const TILE_SIZE_X: u32 = 16;
-const TILE_SIZE_Y: u32 = 24;
-
-
-#[derive(Default)]
-struct MapChunk {
-    
-}
-
-#[derive(Default)]
-struct Map {
-    chunks: HashMap<Vector2Int, MapChunk>
-}
-
-impl Map {
-    pub fn try_get_chunk(&mut self, position: &Vector2Int) -> Option<&mut MapChunk> {
-        self.chunks.get_mut(position)
-    }
-
-    pub fn add_new_chunk(&mut self, position: Vector2Int) {
-        self.chunks.insert(position, MapChunk{});
-    }
-}
-
-
-fn example() {
-    let mut current_chunk_pos = Vector2Int::default();
-    let mut map = Map::default();
-    map.add_new_chunk(current_chunk_pos.clone());
-
-    current_chunk_pos.x+= 1;
-
-    let new_chunk = if let Some(chunk) = map.try_get_chunk(&current_chunk_pos) {
-        chunk
-    } else {
-        map.add_new_chunk(current_chunk_pos.clone());
-        map.try_get_chunk(&current_chunk_pos).unwrap()
-    };
-}
+const TILE_SIZE_X: i32 = 16;
+const TILE_SIZE_Y: i32 = 16;
 
 
 fn main() {
+    
     init();
-    let mut world = World::new();
-    let player = world.reserve_entity();
-    world.insert_one(player, Transform {
-        grid_position: Vector2Int::new(0, 0),
-        screen_positon: Vector2::new(0., 0.),
-        scale: Vector2::new(1., 1.)
-    }).expect("Couldnt insert entity for player");
-
+    let (mut world, player) = setup_world();
+    let mut texture_renderer = TextRenderer::new();
     // let mut batch = RenderBatch::default();
 
     let texture_packer = TexturePacker::new();
-    let frame_buffer = FrameBuffer::new(640 * 2, 480 * 2);
 
     let dot_texture = texture_packer.get_texture("dot");
     let grass_texture = texture_packer.get_texture("grass");
-    let player_tex = texture_packer.get_texture("player");
     let mut rng = rand::thread_rng();
 
 
     let tiles = {
         let mut v: HashMap<Vector2, PartialTexture> = HashMap::new();
-        for x in 0..(640/TILE_SIZE_X) {
-            for y in 0..(480/TILE_SIZE_Y) {
+        for x in 0..(RENDER_RES_W/TILE_SIZE_X) {
+            for y in 0..(RENDER_RES_W/TILE_SIZE_Y) {
                 let value = rng.gen_range(0..5);
                 if value == 0 {
                     v.insert(Vector2::new(x as f32, y as f32), grass_texture.clone());
@@ -90,8 +45,9 @@ fn main() {
     };
 
     while is_running() {
-        run_event_system_hecs(&mut world, player, &mut Events::Move(get_player_direction()));
-        clear(Color (3., 31., 30., 255.));
+
+        query_player_input(&mut world, player);
+        clear(Color (3, 31, 30, 1.));
 
         // batch.add_sprite(&Sprite {
         //     color: Color(100., 100., 100., 255.),
@@ -103,18 +59,22 @@ fn main() {
         // });
 
         //batch.render();
-        frame_buffer.bind(640 * 2, 480 * 2);
-        clear(Color (3., 31., 30., 255.));
+        capture_framebuffer();
+        clear(Color (3, 31, 30, 1.));
         tiles.iter().for_each(|t| {
-            render_texture_partial(t.1, Vector2::new(t.0.x * 16., t.0.y * 24.));    
+            render_texture_partial(t.1, Vector2::new(t.0.x * 16., t.0.y * 16.));    
         });
-        let pos: Vector2 = world.get::<Transform>(player).unwrap().screen_positon.into();
-        render_rect(pos.x, pos.y, 16., 16., Color (3., 31., 30., 255.));
-        render_texture_partial(&player_tex, pos);     
-        frame_buffer.unbind();
-        
-        render_framebuffer_scale(&frame_buffer.texture, Vector2 { x: 0., y: 0. }, Vector2::new(3., 3.));
-        // render_texture(&texture, Vector2 { x: 0., y: 0.});
+
+        world.query::<(&Transform, &SpriteRenderer)>().iter().for_each(|(_, (t, s))| {
+            render_rect(t.screen_positon.x, t.screen_positon.y, 16., 16., Color (3, 31, 30, 1.));
+            render_texture_partial(&texture_packer.get_texture(&s.name), t.screen_positon);
+        });
+
+       
+        stop_capture_framebuffer();
+
+        render_framebuffer(Vector2 { x: 0., y: 0. }, get_window_scale() as f32);
+        texture_renderer.draw("TESTING TEXT RENDER");
         end_render();
     }
 }

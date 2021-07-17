@@ -120,7 +120,7 @@ impl AsespritePacker {
 
         let mut file = std::fs::File::create(Path::new("assets/atlas.ron")).unwrap();
         let str = to_string_pretty(&packed_texture_data, PrettyConfig::default()).unwrap();
-        file.write_all(str.as_bytes());
+        let _ = file.write_all(str.as_bytes());
         println!("Output texture stored in {:?}", file);
 
     }
@@ -128,7 +128,7 @@ impl AsespritePacker {
 }
 
 
-
+ 
 fn main() {
-    let packer = AsespritePacker::new();
+    AsespritePacker::new();
 }

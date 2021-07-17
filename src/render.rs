@@ -53,8 +53,8 @@ static FS_SRC: &'_ str = "
 #[derive(Debug, Default)]
 pub struct Texture {
     id: u32,
-    width: u32,
-    height: u32,
+    pub width: u32,
+    pub height: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -205,7 +205,7 @@ impl Texture {
                     gl::RGB,
                 ),
                 img => {
-                    let image = img.to_rgba();
+                    let image = img.to_rgba8();
                     (
                         image.width() as i32,
                         image.height() as i32,
@@ -350,7 +350,7 @@ impl FrameBuffer {
         }
     }
 
-    pub fn bind(&self, width: i32, height: i32) {
+    pub fn bind(&self) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.id);
         }
@@ -372,7 +372,13 @@ impl Drop for FrameBuffer {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub struct Color(pub f32, pub f32, pub f32, pub f32);
+pub struct Color(pub u8, pub u8, pub u8, pub f32);
+
+impl Color {
+    pub fn into_gl(&self) -> (f32, f32, f32, f32) {
+        (self.0 as f32 / 255., self.1 as f32 / 255., self.2 as f32 / 255., self.3)
+    }
+}
 
 pub fn get_uniform_location(shader: u32, name: &str) -> i32 {
     let c_str_name = CString::new(name).unwrap();
@@ -453,7 +459,7 @@ pub struct Renderer {
     tbo: u32,
     default_texture: Texture,
     screen_scale: Vector2,
-    frame_buffer: FrameBuffer,
+    pub frame_buffer: FrameBuffer,
 }
 
 impl Renderer {
@@ -466,10 +472,10 @@ impl Renderer {
 
         let shader = link_program(vs, fs);
 
-        let mut VAO: u32 = 0;
-        let mut VBO: u32 = 0;
-        let mut IBO: u32 = 0;
-        let mut TBO: u32 = 0;
+        let mut vao: u32 = 0;
+        let mut vertex_buffer_object: u32 = 0;
+        let mut index_buffer_object: u32 = 0;
+        let mut texture_buffer_object: u32 = 0;
 
         unsafe {
             gl::UseProgram(shader);
@@ -487,11 +493,11 @@ impl Renderer {
                 &white_texture as *const _ as *const std::ffi::c_void,
             );
 
-            gl::GenVertexArrays(1, &mut VAO);
-            gl::BindVertexArray(VAO);
+            gl::GenVertexArrays(1, &mut vao);
+            gl::BindVertexArray(vao);
 
-            gl::GenBuffers(1, &mut VBO);
-            gl::BindBuffer(gl::ARRAY_BUFFER, VBO);
+            gl::GenBuffers(1, &mut vertex_buffer_object);
+            gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer_object);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
                 (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize,
@@ -499,8 +505,8 @@ impl Renderer {
                 gl::STATIC_DRAW,
             );
 
-            gl::GenBuffers(1, &mut IBO);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, IBO);
+            gl::GenBuffers(1, &mut index_buffer_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, index_buffer_object);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (INDEX_DATA.len() * mem::size_of::<f32>()) as isize,
@@ -518,8 +524,8 @@ impl Renderer {
             );
             gl::EnableVertexAttribArray(0);
 
-            gl::GenBuffers(1, &mut TBO);
-            gl::BindBuffer(gl::ARRAY_BUFFER, TBO);
+            gl::GenBuffers(1, &mut texture_buffer_object);
+            gl::BindBuffer(gl::ARRAY_BUFFER, texture_buffer_object);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
                 (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize,
@@ -546,10 +552,10 @@ impl Renderer {
         }
 
         Renderer {
-            vao: VAO,
-            vbo: VBO,
-            ibo: IBO,
-            tbo: TBO,
+            vao,
+            vbo: vertex_buffer_object,
+            ibo: index_buffer_object,
+            tbo: texture_buffer_object,
             shader_2d: shader,
             default_texture: Texture {
                 width: 1,
@@ -562,12 +568,10 @@ impl Renderer {
     }
 
     pub fn clear(color: Color) {
+        let (r, g, b, a) = color.into_gl();
         unsafe {
             gl::ClearColor(
-                color.0 / 255.,
-                color.1 / 255.,
-                color.2 / 255.,
-                color.3 / 255.,
+               r, g, b, a 
             );
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
@@ -583,7 +587,7 @@ impl Renderer {
     pub fn set_projection(&self, width: f32, height: f32) {
         unsafe {
             gl::UseProgram(self.shader_2d);
-            let proj: [f32; 16] = Matrix::ortho(0.0, width, height, 0.0, -10.0, 10.0).into();
+            let proj: [f32; 16] = Matrix::ortho(0.0, width, height, 0.0, -100.0, 100.0).into();
             gl::UniformMatrix4fv(
                 get_uniform_location(self.shader_2d, "projection"),
                 1,
@@ -637,12 +641,10 @@ impl Renderer {
                 gl::FALSE,
                 float_model.as_ptr(),
             );
+            let (r, g, b, a) = color.into_gl();
             gl::Uniform4f(
                 get_uniform_location(self.shader_2d, "u_color"),
-                color.0 / 255.,
-                color.1 / 255.,
-                color.2 / 255.0,
-                color.3 / 255.0,
+                r, g, b, a
             );
 
             gl::ActiveTexture(gl::TEXTURE0);

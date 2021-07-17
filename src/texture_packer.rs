@@ -1,13 +1,10 @@
-use asefile::{AsepriteFile, AsepriteParseError, Frame};
-use std::{fs, io::Write, path::PathBuf};
-use image::{DynamicImage, ImageBuffer, Rgba};
-use std::{collections::HashMap, fs::File, path::Path};
-use serde::{Serialize, Deserialize};
+use std::{collections::HashMap};
+use serde::{ Deserialize};
 use ron::{de::{from_str}};
-use crate::{core::load_texture_from_bytes, math::{Vector2, Vector2Int}, render::{PartialTexture, Texture}};
+use crate::{core::load_texture_from_bytes, math::{Vector2Int}, render::{PartialTexture, Texture}};
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct AseTextureData {
     pub width: u32,
     pub height: u32,

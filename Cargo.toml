@@ -21,6 +21,7 @@ texture_packer = "0.23.0"
 rand = "*"
 ron="*"
 serde="*"
+glyph_brush="*"
 
 [dependencies.sdl2]
 version = "0.34"
