@@ -20,15 +20,18 @@ pub fn context_menu(position: Vector2) {
         };
         let bounds = queue_text(&format!("item {}", i), tooltip_pos, 14., Color(255, 255, 255, 1.)).unwrap();
         let collision = is_point_inside_rect(
-            current_mouse_pos, (bounds.min.x - padding) as _, bounds.min.y as _, (bounds.width() + padding * 2.) as _, bounds.height() as _);
+            current_mouse_pos,   
+            (bounds.min.x - padding) as _,
+            bounds.min.y as _,
+            (bounds.width() + padding * 2.) as _,
+            bounds.height() as _,
+        );
         let color = if collision {
-            Color(60, 60, 60, 1.)
+            Color(150, 60, 60, 1.)
         } else {
             Color(50, 50, 50, 1.)
         };
         render_rect(bounds.min.x - padding, bounds.min.y, bounds.width() + padding * 2., bounds.height(), color);
         last_bounds = Some(bounds);
     }
-
-  
 }
