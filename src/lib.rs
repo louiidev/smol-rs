@@ -10,7 +10,8 @@ pub mod ai;
 pub mod world_setup;
 pub mod map;
 pub mod text_render;
-
+pub mod ui;
+pub mod collision;
 
 use std::time::Instant;
 use crate::input::Input;
@@ -64,9 +65,12 @@ impl TimeStep {
 
 pub mod core {
     use super::*;
+    use glyph_brush::ab_glyph::Rect;
     use lazy_static::lazy_static;
     use crate::render::*;
     use crate::math::*;
+    use crate::render::Color;
+    use crate::text_render::TextRenderer;
     use sdl2::video::SwapInterval;
     use sdl2::video::Window;
     use sdl2::EventPump;
@@ -77,6 +81,7 @@ pub mod core {
     use sdl2::event::WindowEvent;
 
     pub type Keycode = sdl2::keyboard::Keycode;
+    pub type MouseButton = sdl2::mouse::MouseButton;
 
     pub const DEFAULT_SCALE: i32 = 3;
 
@@ -94,7 +99,11 @@ pub mod core {
         };
     }
 
-
+    lazy_static! {
+        static ref TEXT_RENDER_CONTEXT: Mutex<TextRenderer> = {
+            Mutex::new(TextRenderer::new(W, H))
+        };
+    }
 
     pub static mut CONTEXT: Option<Smol> = None;
 
@@ -107,6 +116,17 @@ pub mod core {
         RENDER_CONTEXT.lock().unwrap()
     }
 
+    pub fn get_text_render_context() -> std::sync::MutexGuard<'static, TextRenderer> {
+        TEXT_RENDER_CONTEXT.lock().unwrap()
+    }
+
+    pub fn queue_text(text: &str, position: Vector2, font_size: f32, color: Color) -> Option<Rect> {
+        get_text_render_context().queue_text(text, position, font_size, color)
+    }
+
+    pub fn render_text_queue() {
+        get_text_render_context().render_queue();
+    }
 
     pub fn clear(color: Color) {
         Renderer::clear(color);
@@ -180,29 +200,13 @@ pub mod core {
         Vector2Int::new(x as i32 / 2, y as i32 / 2)
     }
 
-
-    pub fn is_key_down(key: Keycode) -> bool {
-        let ctx = get_context();
-        ctx.input.is_key_down(key)
-    }
-
-    pub fn is_key_released(key: Keycode) -> bool {
-        let ctx = get_context();
-        ctx.input.is_key_released(key)
-    }
-
-    pub fn is_key_pressed(key: Keycode) -> bool {
-        let ctx = get_context();
-        ctx.input.is_key_pressed(key)
-    }
-
-
     pub fn is_running() -> bool {
         let ctx = get_context();
         ctx.running
     }
 
     pub fn end_render() {
+        render_text_queue();
         let ctx = get_context();
         ctx.delta_time = ctx.time_step.delta() as f32;
         ctx.window.gl_swap_window();
@@ -230,6 +234,7 @@ pub mod core {
         }
 
         ctx.input.set_keys(&ctx.event_pump);
+        ctx.input.set_mouse_state(&ctx.event_pump);
     }
 
     pub fn delta_time() -> f32 {
@@ -266,7 +271,7 @@ pub mod core {
         
         unsafe {
             CONTEXT = Option::from(
-                Smol {
+                Smol { 
                     running: true,
                     window,
                     event_pump,

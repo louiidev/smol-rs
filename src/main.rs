@@ -1,9 +1,9 @@
 use smol_rs::core::*;
-use smol_rs::input::{ query_player_input};
+use smol_rs::input::{get_mouse_pos, is_mouse_down, query_player_input};
 use smol_rs::math::*;
 use smol_rs::render::*;
 use smol_rs::components::{SpriteRenderer, Transform};
-use smol_rs::text_render::TextRenderer;
+use smol_rs::ui::{context_menu};
 use smol_rs::world_setup::setup_world;
 use std::collections::HashMap;
 use smol_rs::texture_packer::{TexturePacker};
@@ -18,7 +18,6 @@ fn main() {
     
     init();
     let (mut world, player) = setup_world();
-    let mut texture_renderer = TextRenderer::new();
     // let mut batch = RenderBatch::default();
 
     let texture_packer = TexturePacker::new();
@@ -44,7 +43,18 @@ fn main() {
         v
     };
 
+    let mut context_pos: Option<Vector2Int> = None;
+
     while is_running() {
+
+        if is_mouse_down(MouseButton::Right) {
+            context_pos = Some(get_mouse_pos())
+        } else if is_mouse_down(MouseButton::Left) {
+            // check in bounds to see if they clicked an item
+
+            context_pos = None;
+        }
+
 
         query_player_input(&mut world, player);
         clear(Color (3, 31, 30, 1.));
@@ -72,9 +82,18 @@ fn main() {
 
        
         stop_capture_framebuffer();
+        let scale=  get_window_scale() as _;
+        render_framebuffer(Vector2 { x: 0., y: 0. }, scale);
 
-        render_framebuffer(Vector2 { x: 0., y: 0. }, get_window_scale() as f32);
-        texture_renderer.draw("TESTING TEXT RENDER");
+        
+
+        if let Some(pos) = context_pos {
+            let grid_scale = 16 * scale as i32;
+            let grid_pos = (pos / grid_scale) * grid_scale;
+            render_rect(grid_pos.x as _, grid_pos.y as _, 16. * scale, 16. * scale, Color (255, 51, 50, 0.2));
+            context_menu(pos.into());
+        }
+        
         end_render();
     }
 }

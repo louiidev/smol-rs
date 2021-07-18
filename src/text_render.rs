@@ -31,13 +31,12 @@ pub struct TextRenderer {
 
 
 impl TextRenderer {
-    pub fn new() -> TextRenderer {
+    pub fn new(x: i32, y: i32) -> TextRenderer {
         // let dejavu = FontRef::try_from_slice(include_bytes!("../assets/OpenSans-Light.ttf")).unwrap();
-        let dejavu = FontArc::try_from_slice(include_bytes!("../assets/OpenSans-Light.ttf")).unwrap();
+        let dejavu = FontArc::try_from_slice(include_bytes!("../assets/OpenSans-SemiBold.ttf")).unwrap();
         let glyph_brush: GlyphBrush<Vertex> = GlyphBrushBuilder::using_font(dejavu).build();
         let texture = GlGlyphTexture::new(glyph_brush.texture_dimensions());
-        let dimensions = get_window_size();
-        let text_pipe = GlTextPipe::new(dimensions).unwrap();
+        let text_pipe = GlTextPipe::new(Vector2Int{ x, y }).unwrap();
 
         
 
@@ -65,29 +64,32 @@ impl TextRenderer {
     }
 
 
-    pub fn draw(&mut self, text: &str, ) {
-        let dimensions = get_window_size();
-        let width = dimensions.x as f32;
-        let height = dimensions.y as f32;
-        let font_size: f32 = 18.0;
+    pub fn queue_text(&mut self, text: &str, position: Vector2, font_size: f32, color: Color) -> Option<Rect> {
 
         let scale = (font_size * get_window_scale()).round();
-
         let base_text = Text::new(text).with_scale(scale);
+        let (r, g, b, a) = color.into_gl();
+        let section= Section::default()
+            .add_text(base_text.with_color([r, g, b, a]))
+            .with_screen_position((position.x, position.y))
+            .with_layout(
+                Layout::default()
+                    .h_align(HorizontalAlign::Left)
+                    .v_align(VerticalAlign::Top),
+            );
+
+        let bounds = self.glyph_brush.glyph_bounds(&section);
 
         self.glyph_brush.queue(
-            Section::default()
-                .add_text(base_text.with_color([0.3, 0.3, 0.9, 1.0]))
-                .with_screen_position((50., 50.))
-                .with_bounds((width / 3.15, height))
-                .with_layout(
-                    Layout::default()
-                        .h_align(HorizontalAlign::Left)
-                        .v_align(VerticalAlign::Top),
-                ),
+            section
         );
-        
-      
+
+        bounds
+    }
+
+
+    pub fn render_queue(&mut self) {
+
         let texture_name = self.texture.name;
 
         let mut brush_action;
@@ -145,7 +147,7 @@ impl TextRenderer {
     }
 }
 
-use crate::{core::{get_window_scale, get_window_size}, math::Vector2Int};
+use crate::{core::{get_window_scale, get_window_size}, math::{Vector2, Vector2Int}, render::Color};
 
 pub type Res<T> = Result<T, Box<dyn std::error::Error>>;
 /// `[left_top * 3, right_bottom * 2, tex_left_top * 2, tex_right_bottom * 2, color * 4]`
