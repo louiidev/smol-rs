@@ -12,6 +12,7 @@ pub mod map;
 pub mod text_render;
 pub mod ui;
 pub mod collision;
+pub mod camera;
 
 use std::time::Instant;
 use crate::input::Input;
@@ -67,6 +68,8 @@ pub mod core {
     use super::*;
     use glyph_brush::ab_glyph::Rect;
     use lazy_static::lazy_static;
+    use spin_sleep::LoopHelper;
+    use crate::camera::Camera;
     use crate::render::*;
     use crate::math::*;
     use crate::render::Color;
@@ -83,25 +86,43 @@ pub mod core {
     pub type Keycode = sdl2::keyboard::Keycode;
     pub type MouseButton = sdl2::mouse::MouseButton;
 
-    pub const DEFAULT_SCALE: i32 = 3;
+    pub const RENDER_SCALE: f32 = 2.;
 
-    pub const RENDER_RES_W: i32 = 320;
-    pub const RENDER_RES_H: i32 = 240;
+    pub const RENDER_RES_W: i32 = 640;
+    pub const RENDER_RES_H: i32 = 360;
+    pub const BASE_RES_W: f32 = RENDER_RES_W as f32 * RENDER_SCALE;
+    pub const BASE_RES_H: f32 = RENDER_RES_H as f32 * RENDER_SCALE;
 
-    const W: i32 = RENDER_RES_W * DEFAULT_SCALE;
-    const H: i32 = RENDER_RES_H * DEFAULT_SCALE;
+
+    pub fn get_window_scale() -> Vector2 {
+        let ctx = get_context();
+
+        Vector2 {
+            x: ctx.window_size.x as f32 / RENDER_RES_W as f32,
+            y: ctx.window_size.y as f32 / RENDER_RES_H as f32
+        }
+    }
+
+    
+    pub fn get_window_scale_clamped() -> f32 {
+        let pixel_size = Vector2 { x: RENDER_RES_W as f32, y: RENDER_RES_H as f32 };
+        let window_size: Vector2 = get_context().window_size.into();
+        let value = (window_size / pixel_size).x;
+        clamp(2., 5., value)
+    }
+ 
 
     
 
     lazy_static! {
         static ref RENDER_CONTEXT: Mutex<Renderer> = {
-            Mutex::new(Renderer::default(W, H))
+            Mutex::new(Renderer::default(BASE_RES_W as _, BASE_RES_H as _))
         };
     }
 
     lazy_static! {
         static ref TEXT_RENDER_CONTEXT: Mutex<TextRenderer> = {
-            Mutex::new(TextRenderer::new(W, H))
+            Mutex::new(TextRenderer::new(BASE_RES_W as _, BASE_RES_H as _))
         };
     }
 
@@ -129,6 +150,11 @@ pub mod core {
     }
 
     pub fn clear(color: Color) {
+        let ctx = get_context();
+        if let Some(fps) = ctx.loop_helper.report_rate() {
+            ctx.timer_state.fps = Some(fps);
+        }
+
         Renderer::clear(color);
     }
 
@@ -182,17 +208,17 @@ pub mod core {
         render_context.texture_scale(texture, position, scale);
     }
 
+    pub fn render_framebuffer_partial(position: Vector2, max_width: u32, max_height: u32, scale: f32) {
+        let render_context = get_render_context();
+        let texture = &render_context.frame_buffer.texture.create_partial(max_width, max_height, Vector2Int::default());
+        
+        render_context.render_texture_partial_scale(texture, position, scale);
+    }
+
     pub fn get_window_size() -> Vector2Int {
         get_context().window_size
     }
 
-
-    pub fn get_window_scale() -> f32 {
-        let pixel_size = Vector2 { x: RENDER_RES_W as f32, y: RENDER_RES_H as f32 };
-        let window_size: Vector2 = get_context().window_size.into();
-        let value = (window_size / pixel_size).x;
-        f32::min(f32::max(2., value), 5.)
-    }
 
     pub fn get_screen_center() -> Vector2Int {
         let ctx = get_context();
@@ -202,6 +228,8 @@ pub mod core {
 
     pub fn is_running() -> bool {
         let ctx = get_context();
+        let delta = ctx.loop_helper.loop_start().as_secs_f32();
+        ctx.timer_state.delta = delta;
         ctx.running
     }
 
@@ -223,6 +251,7 @@ pub mod core {
                         WindowEvent::Resized(w, h) => {
                             get_render_context().set_viewport(0.0, 0.0, w as u32, h as u32);
                             get_render_context().set_projection(w as f32, h as f32);
+                            get_text_render_context().on_resize_window(Vector2Int { x: w, y: h });
                             ctx.window_size.x = w;
                             ctx.window_size.y = h;
                         },
@@ -235,10 +264,11 @@ pub mod core {
 
         ctx.input.set_keys(&ctx.event_pump);
         ctx.input.set_mouse_state(&ctx.event_pump);
+        ctx.loop_helper.loop_sleep();
     }
 
     pub fn delta_time() -> f32 {
-        get_context().delta_time
+        get_context().timer_state.delta
     }
 
 
@@ -246,14 +276,14 @@ pub mod core {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
         
-       
+        
         let gl_attr = video_subsystem.gl_attr();
         gl_attr.set_context_profile(GLProfile::Core);
         gl_attr.set_context_version(4, 1);
 
-        let screen_width = W;  
-        let screen_height = H; 
-        let window = video_subsystem.window("Window", W as u32, H as u32)
+        let screen_width = BASE_RES_W as i32;  
+        let screen_height = BASE_RES_H as i32; 
+        let window = video_subsystem.window("Window", screen_width as _, screen_height as _)
             .opengl()
             .resizable()
             .build()
@@ -268,6 +298,10 @@ pub mod core {
        
         get_render_context().set_viewport(0.0, 0.0, screen_width as u32, screen_height as u32);
         get_render_context().set_projection(screen_width as f32, screen_height as f32);
+
+        let loop_helper = LoopHelper::builder()
+            .report_interval_s(0.5) // report every half a second
+            .build_with_target_rate(60.0); // limit to 250 FPS if possible
         
         unsafe {
             CONTEXT = Option::from(
@@ -277,11 +311,19 @@ pub mod core {
                     event_pump,
                     _gl_context,
                     time_step: TimeStep::new(),
-                    delta_time: 0.0,
+                    delta_time: 1. / 60.,
                     input: Input::new(),
                     window_size: Vector2Int {
                         x: screen_width as i32,
                         y: screen_height as i32
+                    },
+                    loop_helper,
+                    timer_state: TimerState {
+                        fps: None,
+                        delta: 1. / 60.
+                    },
+                    camera: Camera {
+                        zoom: 1.0
                     }
                 }
             )
@@ -296,7 +338,15 @@ pub mod core {
         time_step: TimeStep,
         pub input: Input,
         delta_time: f32,
-        window_size: Vector2Int
+        pub window_size: Vector2Int,
+        loop_helper: LoopHelper,
+        timer_state: TimerState,
+        camera: Camera
+    }
+
+    pub struct TimerState {
+        delta: f32,
+        fps: Option<f64>
     }
 }
 

@@ -585,6 +585,7 @@ impl Renderer {
     }
 
     pub fn set_projection(&self, width: f32, height: f32) {
+        
         unsafe {
             gl::UseProgram(self.shader_2d);
             let proj: [f32; 16] = Matrix::ortho(0.0, width, height, 0.0, -100.0, 100.0).into();
@@ -703,7 +704,6 @@ impl Renderer {
         Renderer::texture_scale(self, texture, position, 1.0);
     }
 
-    pub fn fb_texture_scale(&self) {}
 
     pub fn framebuffer_texture_scale(&self, texture: &Texture, position: Vector2, scale: Vector2) {
         let mut model = Matrix::translate(position.into());
@@ -732,34 +732,13 @@ impl Renderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.tbo);
         }
 
-        let tex_coords: [f32; 8] = [
-            1.0, 1.0, // top right
-            1.0, 0.0, // bottom right
-            0.0, 0.0, // bottom left
-            0.0, 1.0, // top left
-        ];
-
         unsafe {
-            gl::BufferSubData(
-                gl::ARRAY_BUFFER,
-                0,
-                (tex_coords.len() * mem::size_of::<f32>()) as isize,
-                &tex_coords[0] as *const f32 as *const c_void,
-            );
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindTexture(gl::TEXTURE_2D, texture.id);
             gl::BindVertexArray(self.vao);
 
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
 
-            // RESET BUFFER TO DEFAULT
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.tbo);
-            gl::BufferSubData(
-                gl::ARRAY_BUFFER,
-                0,
-                (VERTEX_DATA.len() * mem::size_of::<f32>()) as isize,
-                &VERTEX_DATA[0] as *const f32 as *const c_void,
-            );
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindVertexArray(0);
             gl::UseProgram(0);
@@ -779,8 +758,8 @@ impl Renderer {
             z: 0.0,
         });
         model.scale(Vector2 {
-            x: rect.width * scale,
-            y: rect.height * scale,
+            x: rect.w * scale,
+            y: rect.h * scale,
         });
         let float_model: [f32; 16] = model.into();
 
@@ -803,13 +782,13 @@ impl Renderer {
         }
 
         let min = Vector2 {
-            x: (rect.x * rect.width) / texture.width as f32,
-            y: (rect.y * rect.height) / texture.height as f32,
+            x: (rect.x * rect.w) / texture.width as f32,
+            y: (rect.y * rect.h) / texture.height as f32,
         };
 
         let max = Vector2 {
-            x: (rect.x + 1.0) * rect.width / texture.width as f32,
-            y: (rect.y + 1.0) * rect.height / texture.height as f32,
+            x: (rect.x + 1.0) * rect.w / texture.width as f32,
+            y: (rect.y + 1.0) * rect.h / texture.height as f32,
         };
 
         let tex_coords: [f32; 8] = [max.x, max.y, max.x, min.y, min.x, min.y, min.x, max.y];
@@ -845,15 +824,40 @@ impl Renderer {
         let source = Rectangle {
             x: texture.position.x as f32,
             y: texture.position.y as f32,
-            width: texture.width as f32,
-            height: texture.height as f32,
+            w: texture.width as f32,
+            h: texture.height as f32,
         };
 
         let dest = Rectangle {
             x: position.x,
             y: position.y,
-            width: texture.width as f32,
-            height: texture.width as f32,
+            w: texture.width as f32,
+            h: texture.width as f32,
+        };
+
+        Renderer::atlas_sub_rect(
+            self,
+            texture.texture_id,
+            texture.texture_width,
+            texture.texture_height,
+            source,
+            dest,
+        );
+    }
+
+    pub fn render_texture_partial_scale(&self, texture: &PartialTexture, position: Vector2, scale: f32) {
+        let source = Rectangle {
+            x: texture.position.x as f32,
+            y: texture.position.y as f32,
+            w: texture.width as f32,
+            h: texture.height as f32,
+        };
+
+        let dest = Rectangle {
+            x: position.x,
+            y: position.y,
+            w: texture.width as f32 * scale,
+            h: texture.width as f32 * scale,
         };
 
         Renderer::atlas_sub_rect(
@@ -883,8 +887,8 @@ impl Renderer {
             z: 0.0,
         });
         model.scale(Vector2 {
-            x: dest.width as f32,
-            y: dest.height as f32,
+            x: dest.w as f32,
+            y: dest.h as f32,
         });
         let float_model: [f32; 16] = model.into();
         unsafe {
@@ -910,8 +914,8 @@ impl Renderer {
         };
 
         let max = Vector2 {
-            x: (sub_texture_data.x + sub_texture_data.width) / texture_width as f32,
-            y: (sub_texture_data.y + sub_texture_data.height) / texture_height as f32,
+            x: (sub_texture_data.x + sub_texture_data.w) / texture_width as f32,
+            y: (sub_texture_data.y + sub_texture_data.h) / texture_height as f32,
         };
 
         let tex_coords: [f32; 8] = [max.x, max.y, max.x, min.y, min.x, min.y, min.x, max.y];

@@ -3,7 +3,7 @@ use smol_rs::input::{get_mouse_pos, is_mouse_down, query_player_input};
 use smol_rs::math::*;
 use smol_rs::render::*;
 use smol_rs::components::{SpriteRenderer, Transform};
-use smol_rs::ui::{context_menu};
+use smol_rs::ui::*;
 use smol_rs::world_setup::setup_world;
 use std::collections::HashMap;
 use smol_rs::texture_packer::{TexturePacker};
@@ -59,16 +59,6 @@ fn main() {
         query_player_input(&mut world, player);
         clear(Color (3, 31, 30, 1.));
 
-        // batch.add_sprite(&Sprite {
-        //     color: Color(100., 100., 100., 255.),
-        //     transform: Transform {
-        //         grid_position: Vector2Int::new(0, 0),
-        //         screen_positon: Vector2::new(0., 0.),
-        //         scale: Vector2::new(1., 1.)
-        //     }
-        // });
-
-        //batch.render();
         capture_framebuffer();
         clear(Color (3, 31, 30, 1.));
         tiles.iter().for_each(|t| {
@@ -81,11 +71,11 @@ fn main() {
         });
 
        
-        stop_capture_framebuffer();
-        let scale=  get_window_scale() as _;
-        render_framebuffer(Vector2 { x: 0., y: 0. }, scale);
-
         
+        let scale = get_window_scale().x;
+
+        stop_capture_framebuffer();
+        render_framebuffer(Vector2 { x: 0., y: 0. }, get_window_scale().x);
 
         if let Some(pos) = context_pos {
             let grid_scale = 16 * scale as i32;
@@ -93,7 +83,8 @@ fn main() {
             render_rect(grid_pos.x as _, grid_pos.y as _, 16. * scale, 16. * scale, Color (255, 51, 50, 0.2));
             context_menu(pos.into());
         }
-        
+
+       
         end_render();
     }
 }

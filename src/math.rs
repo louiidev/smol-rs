@@ -1,12 +1,40 @@
 use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Neg};
 
+use glyph_brush::ab_glyph::Rect;
+
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Rectangle {
     pub x: f32,
     pub y: f32,
-    pub width: f32,
-    pub height: f32
+    pub w: f32,
+    pub h: f32
+}
+
+impl Rectangle {
+    pub fn add_padding(&mut self, expand_by: Vector2) {
+        self.x-= expand_by.x;
+        self.y-= expand_by.y;
+        self.w+= expand_by.x * 2.;
+        self.h+= expand_by.y * 2.;
+    }
+}
+
+
+impl From<Rect> for Rectangle {
+    fn from(item: Rect) -> Self {
+        Rectangle {
+            x: item.min.x,
+            y: item.min.y,
+            h: item.height(),
+            w: item.width()
+        }
+    }
+}
+
+
+pub fn clamp(min: f32, max: f32, value: f32) -> f32 {
+    f32::min(f32::max(min, value), max)
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -471,6 +499,8 @@ impl Matrix {
 		self.m5 *= scale.y;
     }
 
+    
+    #[rustfmt::skip]
     pub fn ortho(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Self
     {
 
@@ -478,23 +508,15 @@ impl Matrix {
         let tb = top - bottom;
         let f_n = far - near;
 
+        let tx = -(right + left) / rl;
+        let ty = -(top + bottom) / tb;
+        let tz = -(far + near) / f_n;
+
         Matrix {
-            m0: 2.0 / rl,
-            m1: 0.0,
-            m2: 0.0,
-            m3: 0.0,
-            m4: 0.0,
-            m5: 2.0 / tb,
-            m6: 0.0,
-            m7: 0.0,
-            m8: 0.0,
-            m9: 0.0,
-            m10: -2.0 / f_n,
-            m11: 0.0,
-            m12: -(left + right) / rl,
-            m13: -(top + bottom) / tb,
-            m14: -(far + near) / f_n,
-            m15: 1.0
+            m0: 2.0 / rl, m1: 0.0, m2: 0.0, m3: 0.0,
+            m4: 0.0, m5: 2.0 / tb, m6: 0.0, m7: 0.0,
+            m8: 0.0, m9: 0.0, m10: -2.0 / f_n, m11: 0.0,
+            m12: tx, m13: ty,  m14: tz, m15: 1.0
         }
     }
 }

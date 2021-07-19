@@ -66,7 +66,7 @@ impl TextRenderer {
 
     pub fn queue_text(&mut self, text: &str, position: Vector2, font_size: f32, color: Color) -> Option<Rect> {
 
-        let scale = (font_size * get_window_scale()).round();
+        let scale = (font_size * get_window_scale().x).round();
         let base_text = Text::new(text).with_scale(scale);
         let (r, g, b, a) = color.into_gl();
         let section= Section::default()
@@ -85,6 +85,11 @@ impl TextRenderer {
         );
 
         bounds
+    }
+    
+
+    pub fn on_resize_window(&self, window_size: Vector2Int) {
+        self.text_pipe.update_geometry(window_size);
     }
 
 
@@ -147,7 +152,7 @@ impl TextRenderer {
     }
 }
 
-use crate::{core::{get_window_scale, get_window_size}, math::{Vector2, Vector2Int}, render::Color};
+use crate::{core::{get_window_scale, get_window_size}, math::{Matrix, Vector2, Vector2Int}, render::Color};
 
 pub type Res<T> = Result<T, Box<dyn std::error::Error>>;
 /// `[left_top * 3, right_bottom * 2, tex_left_top * 2, tex_right_bottom * 2, color * 4]`
@@ -375,7 +380,8 @@ impl GlTextPipe {
             if uniform < 0 {
                 return Err(format!("GetUniformLocation(\"transform\") -> {}", uniform).into());
             }
-            let transform = ortho(0.0, w, 0.0, h, 1.0, -1.0);
+            let transform: [f32; 16] = Matrix::ortho(0.0, w, 0.0, h, -100.0, 100.0).into();
+           
             gl::UniformMatrix4fv(uniform, 1, 0, transform.as_ptr());
 
             let mut offset = 0;
@@ -455,7 +461,7 @@ impl GlTextPipe {
 
     pub fn update_geometry(&self, window_size: Vector2Int) {
         let (w, h) = (window_size.x as f32, window_size.y as f32);
-        let transform = ortho(0.0, w, 0.0, h, 1.0, -1.0);
+        let transform: [f32; 16] = Matrix::ortho(0.0, w, h, 0.0, -100.0, 100.0).into();
 
         unsafe {
             gl::UseProgram(self.program);

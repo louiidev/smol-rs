@@ -26,6 +26,7 @@ pub struct MapChunk {
 
 impl MapChunk {
     pub fn generate(position: Vector2Int) -> Self {
+        
 
         MapChunk {
             position
