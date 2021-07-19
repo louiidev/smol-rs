@@ -376,13 +376,13 @@ impl GlTextPipe {
             gl::BindFragDataLocation(program, 0, CString::new("out_color")?.as_ptr());
 
             // Specify the layout of the vertex data
-            let uniform = gl::GetUniformLocation(program, CString::new("transform")?.as_ptr());
+            let uniform = gl::GetUniformLocation(program, CString::new("projection")?.as_ptr());
             if uniform < 0 {
-                return Err(format!("GetUniformLocation(\"transform\") -> {}", uniform).into());
+                return Err(format!("GetUniformLocation(\"projection\") -> {}", uniform).into());
             }
-            let transform: [f32; 16] = Matrix::ortho(0.0, w, 0.0, h, -100.0, 100.0).into();
+            let projection: [f32; 16] = Matrix::ortho(0.0, w, 0.0, h, -100.0, 100.0).into();
            
-            gl::UniformMatrix4fv(uniform, 1, 0, transform.as_ptr());
+            gl::UniformMatrix4fv(uniform, 1, 0, projection.as_ptr());
 
             let mut offset = 0;
             for (v_field, float_count) in &[
@@ -461,11 +461,11 @@ impl GlTextPipe {
 
     pub fn update_geometry(&self, window_size: Vector2Int) {
         let (w, h) = (window_size.x as f32, window_size.y as f32);
-        let transform: [f32; 16] = Matrix::ortho(0.0, w, h, 0.0, -100.0, 100.0).into();
+        let projection: [f32; 16] = Matrix::ortho(0.0, w, 0.0, h, -100.0, 100.0).into();
 
         unsafe {
             gl::UseProgram(self.program);
-            gl::UniformMatrix4fv(self.transform_uniform, 1, 0, transform.as_ptr());
+            gl::UniformMatrix4fv(self.transform_uniform, 1, 0, projection.as_ptr());
             gl::UseProgram(0);
             gl_assert_ok!();
         }

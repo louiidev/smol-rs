@@ -81,7 +81,7 @@ fn main() {
             let grid_scale = 16 * scale as i32;
             let grid_pos = (pos / grid_scale) * grid_scale;
             render_rect(grid_pos.x as _, grid_pos.y as _, 16. * scale, 16. * scale, Color (255, 51, 50, 0.2));
-            context_menu(pos.into());
+            render_context_menu(pos.into(), vec![ContextItem { text: "testing".to_string() }]);
         }
 
        

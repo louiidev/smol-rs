@@ -208,12 +208,6 @@ pub mod core {
         render_context.texture_scale(texture, position, scale);
     }
 
-    pub fn render_framebuffer_partial(position: Vector2, max_width: u32, max_height: u32, scale: f32) {
-        let render_context = get_render_context();
-        let texture = &render_context.frame_buffer.texture.create_partial(max_width, max_height, Vector2Int::default());
-        
-        render_context.render_texture_partial_scale(texture, position, scale);
-    }
 
     pub fn get_window_size() -> Vector2Int {
         get_context().window_size

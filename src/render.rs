@@ -845,31 +845,6 @@ impl Renderer {
         );
     }
 
-    pub fn render_texture_partial_scale(&self, texture: &PartialTexture, position: Vector2, scale: f32) {
-        let source = Rectangle {
-            x: texture.position.x as f32,
-            y: texture.position.y as f32,
-            w: texture.width as f32,
-            h: texture.height as f32,
-        };
-
-        let dest = Rectangle {
-            x: position.x,
-            y: position.y,
-            w: texture.width as f32 * scale,
-            h: texture.width as f32 * scale,
-        };
-
-        Renderer::atlas_sub_rect(
-            self,
-            texture.texture_id,
-            texture.texture_width,
-            texture.texture_height,
-            source,
-            dest,
-        );
-    }
-
     pub fn atlas_sub_rect(
         &self,
         texture_id: u32,

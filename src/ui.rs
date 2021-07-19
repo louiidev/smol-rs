@@ -1,4 +1,7 @@
+use std::sync::Mutex;
+
 use glyph_brush::ab_glyph::Rect;
+use lazy_static::lazy_static;
 
 use crate::{
     collision::{is_point_inside_rect, is_point_inside_rectangle},
@@ -8,10 +11,57 @@ use crate::{
     render::Color,
 };
 
-pub fn context_menu(position: Vector2) {
+lazy_static! {
+    static ref UI_CONTEXT: Mutex<UiState> = {
+        Mutex::new(UiState {
+            focus_index: None,
+            focus_element: None,
+        })
+    };
+}
+
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum UiElements {
+    ContextMenu,
+}
+
+pub struct UiState {
+    pub focus_index: Option<usize>,
+    pub focus_element: Option<UiElements>
+}
+
+impl UiState {
+    pub fn is_focused(&self, element: UiElements, index: usize) -> bool {
+        match &self.focus_element {
+            Some(focus_element) => {
+                match self.focus_index {
+                    Some(focus_index) => {
+                        focus_element == &element && focus_index == index
+                    },
+                    None => false
+                }
+            },
+            None => false
+        }
+    }
+}
+
+pub fn get_ui_state() -> std::sync::MutexGuard<'static, UiState> {
+    UI_CONTEXT.lock().unwrap()
+}
+
+pub struct ContextItem {
+    pub text: String
+}
+
+pub fn render_context_menu(position: Vector2, items: Vec<ContextItem>) {
     let mut last_bounds: Option<Rect> = None;
+    let mut ui_state = get_ui_state();
     let current_mouse_pos = get_mouse_pos();
-    for i in 1..4 {
+    for i in 0..items.len() {
+        let item = &items[i];
+        let focused = ui_state.is_focused(UiElements::ContextMenu, i);
         let padding: f32 = 10.;
         let tooltip_pos = {
             if let Some(bounds) = last_bounds {
@@ -21,7 +71,7 @@ pub fn context_menu(position: Vector2) {
             }
         };
         let bounds = queue_text(
-            &format!("item {}", i),
+            &item.text,
             tooltip_pos,
             14.,
             Color(255, 255, 255, 1.),
@@ -34,7 +84,16 @@ pub fn context_menu(position: Vector2) {
             (bounds.width() + padding * 2.) as _,
             bounds.height() as _,
         );
-        let color = if collision {
+
+        if collision && !focused {
+            ui_state.focus_index = Some(i);
+            ui_state.focus_element = Some(UiElements::ContextMenu);
+        } else if !collision && focused {
+            ui_state.focus_index = None;
+            ui_state.focus_element = None;
+        }
+
+        let color = if focused {
             Color(150, 60, 60, 1.)
         } else {
             Color(50, 50, 50, 1.)
