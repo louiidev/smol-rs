@@ -22,6 +22,7 @@ rand = "*"
 ron="*"
 serde="*"
 glyph_brush="*"
+spin_sleep = "1.0.0"
 
 [dependencies.sdl2]
 version = "0.34"
