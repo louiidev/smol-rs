@@ -10,6 +10,7 @@ image = "0.23.14"
 texture_packer = "0.23.0"
 ron="*"
 serde="*"
+hashbrown = { version = "0.11", features = ["serde"] }
 
 [dependencies]
 gl = "0.14.0"
@@ -23,6 +24,8 @@ ron="*"
 serde="*"
 glyph_brush="*"
 spin_sleep = "1.0.0"
+hashbrown = "0.11"
+regex = "1.5"
 
 [dependencies.sdl2]
 version = "0.34"

@@ -13,6 +13,9 @@ pub mod text_render;
 pub mod ui;
 pub mod collision;
 pub mod camera;
+pub mod pathfinding;
+pub mod queries;
+pub mod logging;
 
 use std::time::Instant;
 use crate::input::Input;
@@ -73,6 +76,7 @@ pub mod core {
     use crate::render::*;
     use crate::math::*;
     use crate::render::Color;
+    use crate::text_render::TextQueueConfig;
     use crate::text_render::TextRenderer;
     use sdl2::video::SwapInterval;
     use sdl2::video::Window;
@@ -141,8 +145,33 @@ pub mod core {
         TEXT_RENDER_CONTEXT.lock().unwrap()
     }
 
+    pub fn get_text_bounds(text: &str, position: Vector2, font_size: f32) -> Option<Rect> {
+        get_text_render_context().get_text_bounds(text, TextQueueConfig {
+            position,
+            font_size,
+            ..Default::default()
+        })
+    }
+
+    pub fn get_text_bounds_ex(text: &str, text_config: TextQueueConfig) -> Option<Rect> {
+        get_text_render_context().get_text_bounds(text, text_config)
+    }
+
     pub fn queue_text(text: &str, position: Vector2, font_size: f32, color: Color) -> Option<Rect> {
-        get_text_render_context().queue_text(text, position, font_size, color)
+        queue_text_ex(text, TextQueueConfig {
+            position,
+            font_size,
+            color,
+            ..Default::default()
+        })
+    }
+
+    pub fn queue_text_ex(text: &str, text_config: TextQueueConfig) -> Option<Rect> {
+        get_text_render_context().queue_text_ex(text, text_config)
+    }
+
+    pub fn queue_multiple_text(text: Vec<(&str, Color)>, position: Vector2, font_size: f32) -> Option<Rect> {
+        get_text_render_context().queue_multiple(text, position, font_size)
     }
 
     pub fn render_text_queue() {
@@ -189,6 +218,14 @@ pub mod core {
         get_render_context().render_texture_partial(&texture, position);
     }
 
+    pub fn start_scissor(x: i32, y: i32, width: i32, height: i32) {
+        Renderer::start_scissor(x, y, width, height);
+    }
+
+    pub fn end_scissor() {
+        Renderer::end_scissor();
+    }
+
     // pub fn render_texture_to_rect(texture: &Texture, position: Vector2, ) {
     //     get_render_context().texture_rect_scale(&texture, )
     // }
@@ -225,6 +262,16 @@ pub mod core {
         let delta = ctx.loop_helper.loop_start().as_secs_f32();
         ctx.timer_state.delta = delta;
         ctx.running
+    }
+
+    pub fn set_offset(offset: Vector2) {
+        get_render_context().set_offset(offset);
+        get_text_render_context().text_pipe.set_offset(offset);
+    }
+    
+    pub fn reset_offset() {
+        get_render_context().reset_offset();
+        get_text_render_context().text_pipe.reset_offset();
     }
 
     pub fn end_render() {
@@ -265,6 +312,10 @@ pub mod core {
         get_context().timer_state.delta
     }
 
+    pub fn fps() -> f64 {
+        get_context().timer_state.fps.unwrap_or(60.).round()
+    }
+
 
     pub fn init() {
         let sdl_context = sdl2::init().unwrap();
@@ -292,7 +343,7 @@ pub mod core {
        
         get_render_context().set_viewport(0.0, 0.0, screen_width as u32, screen_height as u32);
         get_render_context().set_projection(screen_width as f32, screen_height as f32);
-
+        set_offset(Vector2::default());
         let loop_helper = LoopHelper::builder()
             .report_interval_s(0.5) // report every half a second
             .build_with_target_rate(60.0); // limit to 250 FPS if possible

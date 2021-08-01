@@ -1,7 +1,8 @@
 use asefile::{AsepriteFile };
 use std::{fs, io::Write, path::PathBuf};
 use image::{DynamicImage, ImageBuffer, Rgba};
-use std::{collections::HashMap,  path::Path};
+use std::{path::Path};
+use hashbrown::HashMap;
 use texture_packer::{exporter::ImageExporter, TexturePacker, TexturePackerConfig };
 use serde::{Serialize, Deserialize};
 use ron::{ser::{PrettyConfig, to_string_pretty}};
@@ -48,14 +49,12 @@ impl AsespritePacker {
 
         let path = Path::new("./ase_files");
         let ase_files: Vec<AseFile> = {
-            println!("{}", path.display());
             let paths = fs::read_dir(path).unwrap();
             paths.map(|p| {
                 
                 let path_buff = p.unwrap();
                 
                 let name =  path_buff.path().file_stem().unwrap().to_str().unwrap().to_string();
-                println!("{}", name);
                 AseFile {
                     path: path_buff.path().as_path().to_owned(),
                     name
@@ -101,28 +100,14 @@ impl AsespritePacker {
         }
 
         let image = ImageExporter::export(&packer).unwrap();
-
-        fs::read_dir(Path::new("./assets")).unwrap().for_each(|p| {
-                
-            let path_buff = p.unwrap();
-            
-            let name =  path_buff.path().file_stem().unwrap().to_str().unwrap().to_string();
-            println!("{}", name);
-        
-        });
-
         let mut file = std::fs::File::create(Path::new("assets/atlas.png")).unwrap();
         image
             .write_to(&mut file, image::ImageFormat::Png)
             .unwrap();
-        println!("Output texture stored in {:?}", file);
-
 
         let mut file = std::fs::File::create(Path::new("assets/atlas.ron")).unwrap();
         let str = to_string_pretty(&packed_texture_data, PrettyConfig::default()).unwrap();
         let _ = file.write_all(str.as_bytes());
-        println!("Output texture stored in {:?}", file);
-
     }
   
 }

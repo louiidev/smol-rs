@@ -170,7 +170,6 @@ impl RenderBatch {
             verticies[offset + 3] = gl_color.1;
             verticies[offset + 4] = gl_color.2;
             verticies[offset + 5] = gl_color.3;
-            println!("{:?}", offset);
             offset += VERTEX_SIZE as usize;
         }
     }
@@ -200,7 +199,6 @@ impl RenderBatch {
             self.verticies[offset + 3] = gl_color.1;
             self.verticies[offset + 4] = gl_color.2;
             self.verticies[offset + 5] = gl_color.3;
-            println!("{:?}", offset);
             offset += VERTEX_SIZE as usize;
         }
     }

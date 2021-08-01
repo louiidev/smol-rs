@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use hashbrown::HashMap;
 use serde::{ Deserialize};
 use ron::{de::{from_str}};
 use crate::{core::load_texture_from_bytes, math::{Vector2Int}, render::{PartialTexture, Texture}};

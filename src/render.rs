@@ -19,37 +19,6 @@ static INDEX_DATA: [u32; 6] = [
     1, 2, 3, // second triangl::
 ];
 
-// Shader sources
-static VS_SRC: &'_ str = "
-    #version 330 core
-    layout (location = 0) in vec2 vertex;
-    layout (location = 1) in vec2 tex_coords;
-
-    out vec2 TexCoord;
-
-    uniform mat4 projection;
-    uniform mat4 model;
-
-    void main()
-    {
-        gl_Position = projection * model * vec4(vertex.x, 1-vertex.y, 0.0, 1.0);
-        TexCoord = tex_coords;
-    }";
-
-static FS_SRC: &'_ str = "
-    #version 330 core
-    out vec4 FragColor;  
-    in vec2 TexCoord;
-
-    uniform sampler2D ourTexture;
-    uniform vec4 u_color;
-
-    
-    void main()
-    {
-        FragColor = texture(ourTexture, TexCoord) * u_color; 
-    }";
-
 #[derive(Debug, Default)]
 pub struct Texture {
     id: u32,
@@ -337,9 +306,6 @@ impl FrameBuffer {
             if gl::CheckFramebufferStatus(gl::DRAW_FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
                 panic!("ERROR IN OPENGL FRAME BUFFER");
             }
-
-            println!("fbo_id: {} ", fbo_id);
-
             gl::BindFramebuffer(gl::FRAMEBUFFER, default_draw_fbo as u32);
 
             texture
@@ -380,6 +346,12 @@ impl Color {
     }
 }
 
+pub(crate) const WHITE: Color = Color(255, 255, 255, 1.);
+pub(crate) const BLUE: Color = Color(10, 10, 255, 1.);
+pub(crate) const RED: Color = Color(255, 10, 10, 1.);
+pub(crate) const GREEN: Color = Color(10, 255, 10, 1.);
+pub(crate) const BLACK: Color = Color(1, 1, 1, 1.);
+
 pub fn get_uniform_location(shader: u32, name: &str) -> i32 {
     let c_str_name = CString::new(name).unwrap();
     unsafe { gl::GetUniformLocation(shader, c_str_name.as_ptr()) }
@@ -405,7 +377,6 @@ pub fn compile_shader(src: &str, ty: gl::types::GLenum) -> u32 {
                 ptr::null_mut(),
                 buf.as_mut_ptr() as *mut gl::types::GLchar,
             );
-            println!("{}", src);
             panic!(
                 "couldn't compile shader {}",
                 str::from_utf8(&buf)
@@ -467,8 +438,8 @@ impl Renderer {
         let white_texture: u32 = 0xffffffff;
         let mut white_tex_id: u32 = 0;
 
-        let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
-        let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
+        let vs = compile_shader(include_str!("shader/2d.vs"), gl::VERTEX_SHADER);
+        let fs = compile_shader(include_str!("shader/2d.fs"), gl::FRAGMENT_SHADER);
 
         let shader = link_program(vs, fs);
 
@@ -599,25 +570,33 @@ impl Renderer {
         }
     }
 
-    pub fn set_projection_center(&self, width: f32, height: f32) {
+    pub fn set_offset(&self, offset: Vector2) {
         unsafe {
             gl::UseProgram(self.shader_2d);
-            let half_width = width / 2.;
-            let half_height = height / 2.;
-            let proj: [f32; 16] = Matrix::ortho(
-                -half_width,
-                half_width as f32,
-                -half_height,
-                half_height,
-                -10.0,
-                10.0,
-            )
-            .into();
+            let view = Matrix::translate(Vector3 { x: offset.x, y: offset.y, z: 0.0 });
+
+            let float_view: [f32; 16] = view.into();
             gl::UniformMatrix4fv(
-                get_uniform_location(self.shader_2d, "projection"),
+                get_uniform_location(self.shader_2d, "view"),
                 1,
                 gl::FALSE,
-                proj.as_ptr(),
+                float_view.as_ptr(),
+            );
+            gl::UseProgram(0);
+        }
+    }
+
+    pub fn reset_offset(&self) {
+        unsafe {
+            gl::UseProgram(self.shader_2d);
+            let view = Matrix::translate(Vector3 { x: 0.0, y: 0.0, z: 0.0 });
+
+            let float_view: [f32; 16] = view.into();
+            gl::UniformMatrix4fv(
+                get_uniform_location(self.shader_2d, "view"),
+                1,
+                gl::FALSE,
+                float_view.as_ptr(),
             );
             gl::UseProgram(0);
         }
@@ -920,11 +899,26 @@ impl Renderer {
             gl::UseProgram(0);
         }
     }
+
+    pub fn start_scissor(x: i32, y: i32, width: i32, height: i32) {
+        unsafe {
+            gl::Enable(gl::SCISSOR_TEST);
+            gl::Scissor(x, y, width, height);
+        }
+    }
+
+    pub fn end_scissor() {
+        unsafe {
+            gl::Disable(gl::SCISSOR_TEST);
+        }
+    }
+    
+
 }
+
 
 impl Drop for Renderer {
     fn drop(&mut self) {
-        println!("Renderer dropped");
         unsafe {
             gl::DeleteProgram(self.shader_2d);
             gl::DeleteBuffers(1, &self.tbo);

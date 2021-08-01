@@ -1,20 +1,31 @@
 use std::collections::VecDeque;
 
 use hecs::{Entity, World};
-use crate::events::{Action, run_event_system_hecs};
+use crate::events::{Action, get_ai_action, run_event_system_hecs};
 use crate::components::{Physics, Actor};
 
 
 pub fn recusiverly_fire_action(world: &mut World, entities: &mut VecDeque<Entity>) {
     if let Some(e) = entities.pop_front() {
         let action: Option<Action> = {
-            let mut actor = world.get_mut::<Actor>(e).unwrap();
+            let (actor_action, actor_relationships) = {
+                let mut actor =  world.get_mut::<Actor>(e).unwrap();
+                (
+                    actor.action.take(),
+                    actor.relationships.clone()
+                )
+            };
+            
+            let action = if let Some(actor_action) = actor_action {
+                actor_action
+            } else {
+                get_ai_action(world, e, actor_relationships)
+            };
             let mut physics = world.get_mut::<Physics>(e).unwrap();
-            let action = actor.get_action();
+            
             let can = action.cost <= physics.energy;
 
             let mut return_action: Option<Action> = None;
-            println!("speed: {}",physics.speed);
             if can {
                 physics.energy -= action.cost;
                 if physics.energy > 0. {
@@ -29,7 +40,7 @@ pub fn recusiverly_fire_action(world: &mut World, entities: &mut VecDeque<Entity
         };
        
         if action.is_some() {
-            run_event_system_hecs(world, e, &mut action.unwrap().action);
+            run_event_system_hecs(world, e, &mut action.unwrap().event);
         }
         recusiverly_fire_action(world, entities); 
     }
@@ -80,7 +91,7 @@ mod test {
             let mut actor = world.get_mut::<Actor>(player).unwrap();
             actor.action = Some(Action {
                 cost: 1.,
-                action: Events::Move(Vector2Int::new(1, 0))
+                event: Events::MoveTo(player_pos + Vector2Int::new(1, 0))
             });
         }
        

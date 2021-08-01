@@ -18,42 +18,51 @@ macro_rules! gl_assert_ok {
     }};
 }
 
-
 pub type Vertex = [GLfloat; 13];
 
-
 pub struct TextRenderer {
-    text_pipe: GlTextPipe,
+    pub text_pipe: GlTextPipe,
     texture: GlGlyphTexture,
     glyph_brush: GlyphBrush<Vertex>,
     max_image_dimension: u32,
 }
 
 
+pub type TextAlignment = HorizontalAlign;
+
+#[derive(Debug)]
+pub struct TextQueueConfig {
+    pub horizontal_alginment: TextAlignment,
+    pub font_size: f32,
+    pub position: Vector2,
+    pub color: Color,
+}
+
+impl Default for TextQueueConfig {
+    fn default() -> Self {
+        Self {
+            horizontal_alginment: TextAlignment::Left,
+            font_size: 16.,
+            position: Vector2::default(),
+            color: Color(0, 0, 0, 1.),
+        }
+    }
+}
+
+
 impl TextRenderer {
     pub fn new(x: i32, y: i32) -> TextRenderer {
         // let dejavu = FontRef::try_from_slice(include_bytes!("../assets/OpenSans-Light.ttf")).unwrap();
-        let dejavu = FontArc::try_from_slice(include_bytes!("../assets/OpenSans-SemiBold.ttf")).unwrap();
+        let dejavu = FontArc::try_from_slice(include_bytes!("../assets/ThaleahFat.ttf")).unwrap();
         let glyph_brush: GlyphBrush<Vertex> = GlyphBrushBuilder::using_font(dejavu).build();
         let texture = GlGlyphTexture::new(glyph_brush.texture_dimensions());
         let text_pipe = GlTextPipe::new(Vector2Int{ x, y }).unwrap();
 
-        
-
-      
-        let  vertex_count = 0;
-        let  vertex_max = vertex_count;
-
-
-        
         let max_image_dimension = {
             let mut value = 0;
             unsafe { gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &mut value) };
             value as u32
         };
-
-
-
 
         TextRenderer {
             text_pipe,
@@ -63,18 +72,65 @@ impl TextRenderer {
         }
     }
 
-
-    pub fn queue_text(&mut self, text: &str, position: Vector2, font_size: f32, color: Color) -> Option<Rect> {
-
+    pub fn queue_multiple(&mut self, text: Vec<(&str, Color)>, position: Vector2, font_size: f32) -> Option<Rect> {
         let scale = (font_size * get_window_scale().x).round();
-        let base_text = Text::new(text).with_scale(scale);
-        let (r, g, b, a) = color.into_gl();
-        let section= Section::default()
-            .add_text(base_text.with_color([r, g, b, a]))
+        let mut section= Section::default()
             .with_screen_position((position.x, position.y))
             .with_layout(
                 Layout::default()
                     .h_align(HorizontalAlign::Left)
+                    .v_align(VerticalAlign::Top),
+            );
+            let text_group: Vec<Text> = text.iter().map(|(t, color)| {
+                let (r, g, b, a) = color.into_gl();
+                let base_text = Text::new(&t).with_scale(scale).with_color([r, g, b, a]);
+                base_text
+            }).collect();
+
+            for base_text in text_group {
+                section = section.add_text(base_text);
+            }
+
+            
+
+        let bounds = self.glyph_brush.glyph_bounds(&section);
+
+        self.glyph_brush.queue(
+            section
+        );
+
+        bounds
+
+    }
+
+    pub fn get_text_bounds(&mut self, text: &str, text_config: TextQueueConfig) -> Option<Rect> {
+
+        let scale = (text_config.font_size * get_window_scale().x).round();
+        let base_text = Text::new(text).with_scale(scale);
+
+        let section= Section::default()
+        .add_text(base_text)
+        .with_screen_position((text_config.position.x, text_config.position.y))
+        .with_layout(
+            Layout::default()
+                .h_align(text_config.horizontal_alginment)
+                .v_align(VerticalAlign::Top),
+        );
+
+        self.glyph_brush.glyph_bounds(&section)
+    }
+
+    pub fn queue_text_ex(&mut self, text: &str, text_config: TextQueueConfig) -> Option<Rect> {
+
+        let scale = (text_config.font_size * get_window_scale().x).round();
+        let base_text = Text::new(text).with_scale(scale);
+        let (r, g, b, a) = text_config.color.into_gl();
+        let section= Section::default()
+            .add_text(base_text.with_color([r, g, b, a]))
+            .with_screen_position((text_config.position.x, text_config.position.y))
+            .with_layout(
+                Layout::default()
+                    .h_align(text_config.horizontal_alginment)
                     .v_align(VerticalAlign::Top),
             );
 
@@ -152,7 +208,7 @@ impl TextRenderer {
     }
 }
 
-use crate::{core::{get_window_scale, get_window_size}, math::{Matrix, Vector2, Vector2Int}, render::Color};
+use crate::{core::{get_window_scale}, math::{Matrix, Vector2, Vector2Int, Vector3}, render::{Color, get_uniform_location}};
 
 pub type Res<T> = Result<T, Box<dyn std::error::Error>>;
 /// `[left_top * 3, right_bottom * 2, tex_left_top * 2, tex_right_bottom * 2, color * 4]`
@@ -381,7 +437,9 @@ impl GlTextPipe {
                 return Err(format!("GetUniformLocation(\"projection\") -> {}", uniform).into());
             }
             let projection: [f32; 16] = Matrix::ortho(0.0, w, 0.0, h, -100.0, 100.0).into();
-           
+            let offset_location = get_uniform_location(program, "offset");
+
+            gl::Uniform2f(offset_location, 0., 0.);
             gl::UniformMatrix4fv(uniform, 1, 0, projection.as_ptr());
 
             let mut offset = 0;
@@ -431,6 +489,39 @@ impl GlTextPipe {
             vertex_buffer_len: 0,
         })
     }
+
+    pub fn set_offset(&self, offset: Vector2) {
+        unsafe {
+            gl::UseProgram(self.program);
+            let view = Matrix::translate(Vector3 { x: offset.x, y: offset.y, z: 0.0 });
+
+            let float_view: [f32; 16] = view.into();
+            gl::UniformMatrix4fv(
+                get_uniform_location(self.program, "view"),
+                1,
+                gl::FALSE,
+                float_view.as_ptr(),
+            );
+            gl::UseProgram(0);
+        }
+    }
+
+    pub fn reset_offset(&self) {
+        unsafe {
+            gl::UseProgram(self.program);
+            let view = Matrix::translate(Vector3 { x: 0.0, y: 0.0, z: 0.0 });
+
+            let float_view: [f32; 16] = view.into();
+            gl::UniformMatrix4fv(
+                get_uniform_location(self.program, "view"),
+                1,
+                gl::FALSE,
+                float_view.as_ptr(),
+            );
+            gl::UseProgram(0);
+        }
+    }
+
 
     pub fn upload_vertices(&mut self, vertices: &[Vertex]) {
         // Draw new vertices

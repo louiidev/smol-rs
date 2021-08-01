@@ -3,7 +3,10 @@ use crate::math::*;
 use hecs::Entity;
 use hecs::World;
 
-pub fn setup_world() -> (World, Entity) {
+
+pub type WorldPlayer = (World, Entity);
+
+pub fn setup_world() -> WorldPlayer {
     let mut world = World::new();
 
     let player = world.spawn((
@@ -12,12 +15,16 @@ pub fn setup_world() -> (World, Entity) {
             screen_positon: Vector2::new(5. * 16., 5. * 16.),
             scale: Vector2::new(1., 1.),
         },
-        Physics { health: 10, speed: 1., ..Default::default() },
+        Physics::new(10, 1.),
         Actor::default(),
         SpriteRenderer {
             name: "player".to_string(),
             ..Default::default()
-        }
+        },
+        PlayerController,
+        Inventory {
+            items: vec![Box::new(HealthPotion::default()), Box::new(HealthPotion::default()), Box::new(HealthPotion::default())]
+        },
     ));
 
     world.spawn((
@@ -26,10 +33,10 @@ pub fn setup_world() -> (World, Entity) {
             screen_positon: Vector2::new(10. * 16., 10. * 16.),
             scale: Vector2::new(1., 1.),
         },
-        Physics { health: 10, speed: 1., ..Default::default() },
+        Physics::new(10, 2.),
         Actor::default(),
         SpriteRenderer {
-            name: "creature".to_string(),
+            name: "minicoo".to_string(),
             ..Default::default()
         }
     ));

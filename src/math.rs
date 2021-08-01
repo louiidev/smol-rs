@@ -86,6 +86,13 @@ impl Vector2 {
     pub fn normalized(&self) -> Vector2 {
         *self / self.length()
     }
+
+    pub fn distance(self, v: Vector2) -> f32 {
+        let x = self.x - v.x;
+        let y = self.y - v.y;
+
+        f32::sqrt(x*x + y*y)
+    }
 }
 
 impl Add for Vector2 {
@@ -311,6 +318,43 @@ impl Vector2Int {
         Vector2Int {
             x: 0,
             y: 0
+        }
+    }
+
+    pub fn right() -> Self {
+        Vector2Int {
+            x: 1,
+            y: 0
+        }
+    }
+
+    pub fn up() -> Self {
+        Vector2Int {
+            x: 0,
+            y: 1
+        }
+    }
+
+    pub fn left() -> Self {
+        Vector2Int {
+            x: -1,
+            y: 0
+        }
+    }
+
+    pub fn down() -> Self {
+        Vector2Int {
+            x: 0,
+            y: -1
+        }
+    }
+}
+
+impl From<Vector2> for Vector2Int {
+    fn from(item: Vector2) -> Self {
+        Vector2Int {
+            x: item.x as _,
+            y: item.y as _,
         }
     }
 }
