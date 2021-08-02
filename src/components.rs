@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use hashbrown::HashMap;
 use hecs::{Entity, EntityRef, World};
 use rand::Rng;
@@ -93,7 +95,7 @@ impl Default for SpriteRenderer {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct Relationship(i32);
+pub struct Relationship(pub i32);
 
 impl Relationship {
     pub fn is_friendly(&self) -> bool {
@@ -106,7 +108,7 @@ impl Relationship {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct Relationships (HashMap<Entity, Relationship>);
+pub struct Relationships (pub HashMap<Entity, Relationship>);
 
 impl Relationships {
     pub fn is_enemy(&self, e: Entity) -> bool {
@@ -119,7 +121,7 @@ impl Relationships {
 }
 
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default)]
 pub struct Actor {
     pub action: Option<Action>,
     pub relationships: Relationships
@@ -257,7 +259,7 @@ pub struct Inventory {
 //     action: Action,
 // }
 
-pub trait Item: Send + Sync + ItemClone {
+pub trait Item: Send + Sync + ItemClone + Debug {
     fn get_action(&self, world: &mut World, parent: Entity) -> Option<Action>;
     fn name(&self) -> &str { "no name" }
     fn description(&self) -> &str { "no description" }
@@ -283,7 +285,7 @@ impl Clone for Box<dyn Item> {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct HealthPotion {
 
 }

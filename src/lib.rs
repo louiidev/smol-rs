@@ -170,7 +170,7 @@ pub mod core {
         get_text_render_context().queue_text_ex(text, text_config)
     }
 
-    pub fn queue_multiple_text(text: Vec<(&str, Color)>, position: Vector2, font_size: f32) -> Option<Rect> {
+    pub fn queue_multiple_text(text: Vec<(String, Color)>, position: Vector2, font_size: f32) -> Option<Rect> {
         get_text_render_context().queue_multiple(text, position, font_size)
     }
 

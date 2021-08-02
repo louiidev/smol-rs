@@ -3,6 +3,9 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 
+
+pub mod window;
+
 use crate::{components::{Inventory, Item}, core::get_text_bounds, text_render::TextAlignment};
 use glyph_brush::ab_glyph::Rect;
 use hecs::{Entity, World};
@@ -120,17 +123,22 @@ impl ContextMenu {
                 UiEvent::MouseButtonDown(btn) => {
                     match btn {
                         MouseButton::Left => {
-                            self.position = None;
+                            if self.position.is_some() {
+                                self.position = None;
+                                input_state.ui_event = None;
+                            }
+                            
                         },
                         MouseButton::Right => {
                             let pos = get_mouse_pos();
                             self.position = Some(pos.into());
                             remake_items = true;
+                            input_state.ui_event = None;
                         },
                         _ => {},
                     }
                     input_state.context_menu_position = self.position;
-                    input_state.ui_event = None;
+                    
                 },
                 _ => {}
             }
@@ -429,10 +437,6 @@ impl ItemsWindow {
 
                 if is_point_inside_rectangle(mouse_pos, &rect) {
                     self.focus_index = Some(index);
-
-                    if is_mouse_down(MouseButton::Left) {
-
-                    }
                 }
 
                 last_bounds = Some(bounds);

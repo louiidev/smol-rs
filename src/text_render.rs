@@ -72,7 +72,7 @@ impl TextRenderer {
         }
     }
 
-    pub fn queue_multiple(&mut self, text: Vec<(&str, Color)>, position: Vector2, font_size: f32) -> Option<Rect> {
+    pub fn queue_multiple(&mut self, text: Vec<(String, Color)>, position: Vector2, font_size: f32) -> Option<Rect> {
         let scale = (font_size * get_window_scale().x).round();
         let mut section= Section::default()
             .with_screen_position((position.x, position.y))

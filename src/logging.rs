@@ -4,22 +4,22 @@ use std::{collections::VecDeque, sync::Mutex};
 
 use crate::render::{BLACK, BLUE, Color, GREEN, RED, WHITE};
 
-pub type LogItemValue<'a> = (&'a str, Color);
+pub type LogItemValue = (String, Color);
 
 #[derive(Default, Debug)]
-pub struct Log<'a> {
-    pub items: Vec<Vec<LogItemValue<'a>>>,
+pub struct Log {
+    pub items: Vec<Vec<LogItemValue>>,
 }
 
 lazy_static! {
-    static ref LOG: Mutex<Log<'static>> = Mutex::new(Log::default());
+    static ref LOG: Mutex<Log> = Mutex::new(Log::default());
 }
 
-pub fn get_log() -> std::sync::MutexGuard<'static, Log<'static>> {
+pub fn get_log() -> std::sync::MutexGuard<'static, Log> {
     LOG.lock().unwrap()
 }
 
-pub fn log_new_message(text: &'static str) {
+pub fn log_new_message(text: &str) {
     let mut log = get_log();
     log.items.push(parse_tokens(lex(text)));
 }
@@ -140,14 +140,14 @@ fn parse_tokens(tokens: Vec<Token>) -> Vec<LogItemValue> {
                     _ => panic!("TOKEN IS NOT A COLOR"),
                 };
                 let text = match text_token {
-                    Token::Text(text) => text,
+                    Token::Text(text) => text.to_owned(),
                     _ => panic!("TOKEN IS NOT TEXT"),
                 };
                 log.push((text, log_color_to_color(color)))
             }
             Token::CloseParen => {}
             Token::Text(text) => {
-                log.push((text, WHITE));
+                log.push((text.to_owned(), WHITE));
             }
             Token::Color(_) => {}
         }
@@ -179,9 +179,9 @@ fn parsing() {
     let log_message = parse_tokens(tokens);
 
     let expect_log = vec![
-        ("Hello ", BLUE),
-        ("World, My ", WHITE),
-        ("name is louis!", RED),
+        ("Hello ".to_owned(), BLUE),
+        ("World, My ".to_owned(), WHITE),
+        ("name is louis!".to_owned(), RED),
     ];
 
     assert_eq!(log_message, expect_log)
@@ -199,7 +199,7 @@ fn parsing_normal_text() {
 
     let log_message = parse_tokens(tokens);
 
-    let expect_log = vec![("Hello world my name is louis!", WHITE)];
+    let expect_log = vec![("Hello world my name is louis!".to_owned(), WHITE)];
 
     assert_eq!(log_message, expect_log)
 }

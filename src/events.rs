@@ -1,4 +1,4 @@
-use crate::{components::{Actor, Captured, PlayerController, Relationships}, logging::{log_new_message}, map::get_map, math::{Vector2, Vector2Int}, queries::get_entity_grid_position, render::{Color, WHITE}};
+use crate::{components::{Actor, Captured, Item, PlayerController, Relationship, Relationships}, logging::{log_new_message}, map::get_map, math::{Vector2, Vector2Int}, queries::get_entity_grid_position, render::{Color, WHITE}};
 use hecs::{ Entity, World };
 use crate::components::{Invulnerable, Physics, Transform};
 
@@ -16,18 +16,25 @@ pub struct AttackAction {
 }
 
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default)]
 pub struct Action {
     pub cost: f32,
     pub event: Events
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
+pub struct ThrowAction {
+    pub item: Box<dyn Item>,
+    pub target: Entity,
+}
+
+#[derive(Debug, Clone)]
 pub enum Events {
     TakeDamage(DamageAction),
     MoveTo(Vector2Int),
     MoveDirection(Vector2Int),
     Attack(AttackAction),
+    ThrowItem(ThrowAction),
     Empty,
 }
 
@@ -60,6 +67,19 @@ fn event_move_direction(world: &mut World, ent: Entity, action: &mut Vector2Int)
     if let Ok(mut comp) = world.get_mut::<Transform>(ent) {
         comp.move_direction(*action);
     }
+}
+
+fn event_throw_item(world: &mut World, ent: Entity, action: &mut ThrowAction) {
+
+    if let Ok(mut comp) = world.get_mut::<Actor>(action.target) {
+        if let Some(relationship) = comp.relationships.0.get_mut(&action.target) {
+            relationship.0 = relationship.0.min(-500);
+        } else {
+            comp.relationships.0.insert(action.target, Relationship(-500));
+        }
+    }
+
+    log_new_message(&format!("You threw a [BLUE {} ] at [RED {:?}]", action.item.name(), action.target));
 }
 
 
@@ -98,6 +118,7 @@ pub fn run_event_system_hecs(world: &mut World, ent: Entity, event: &mut Events)
         Events::TakeDamage(action) =>event_take_damage(world, ent, action),
         Events::MoveTo(action) => event_move_to(world, ent, *action),
         Events::MoveDirection(action) => event_move_direction(world, ent, action),
+        Events::ThrowItem(action) => event_throw_item(world, ent, action),
         _ => {},
     }
 }

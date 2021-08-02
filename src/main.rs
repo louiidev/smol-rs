@@ -10,16 +10,14 @@ use smol_rs::ui::*;
 use smol_rs::world_setup::setup_world;
 use smol_rs::texture_packer::{TexturePacker};
 use rand::{self, Rng};
-
+use smol_rs::ui::window::{ self, WindowState };
 
 
 
 fn main() {
     init();
     let mut input_state = InputState::default();
-
-    
-    let mut items_window = ItemsWindow::new(Rectangle { x: 240., y: 110., w: 500., h: 300. });
+    let mut items_window = window::ItemsWindow::new(Vec::default());
 
     let (mut world, player) = setup_world();
     // let mut batch = RenderBatch::default();
@@ -33,7 +31,9 @@ fn main() {
         query_ui_input(&mut input_state);
         
         context_menu.update(&mut input_state, &world, player);
-        items_window.update(&mut input_state, &world, player);
+        if input_state.ui_action_type.is_some() {
+            items_window.update(&mut input_state, &world, player);
+        }
 
         query_world_input(&mut input_state, &world, player);
 
@@ -74,8 +74,10 @@ fn main() {
         log_info_box.render();
         sidebar.render();
         // queue_text(&format!("FPS: {}", fps()), Vector2::default(), 20., Color(150, 50, 50, 1.));
-
-        items_window.render(); 
+        if input_state.ui_action_type.is_some() {
+            items_window.render();
+        }
+         
         
         end_render();
     }

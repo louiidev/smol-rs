@@ -4,9 +4,9 @@ use sdl2::keyboard::Keycode;
 use sdl2::mouse::MouseState;
 use sdl2::rect::Point;
 use sdl2::EventPump;
-use crate::components::Actor;
+use crate::components::{Actor, Inventory, Item};
 use crate::core::{MouseButton, get_context, get_window_scale};
-use crate::events::{Action, Events};
+use crate::events::{Action, Events, ThrowAction};
 use crate::map::get_map;
 use crate::math::{Vector2, Vector2Int};
 use crate::pathfinding::a_star;
@@ -117,6 +117,7 @@ pub struct InputState {
     pub ui_event: Option<UiEvent>,
     pub world_input_block: bool,
     pub context_menu_position: Option<Vector2>,
+    pub selected_item: Option<Box<dyn Item>>
 }
 
 pub fn screen_to_grid(screen_pos: Vector2Int) -> Vector2Int {
@@ -198,7 +199,7 @@ pub fn query_ui_input(input_state: &mut InputState) {
 }
 
 pub fn update(input_state: &mut InputState, world: &mut World, player: Entity) {
-
+    let mut run_actions = false;
 
 
     if let Some(position) = input_state.path.pop() {
@@ -209,7 +210,33 @@ pub fn update(input_state: &mut InputState, world: &mut World, player: Entity) {
                 event: Events::MoveTo(position),
             });
         }
-        
+        run_actions = true;
+    } else if let Some(ui_action_type) = input_state.ui_action_type {
+        match ui_action_type {
+             ContextMenuAction::ThrowItem(target) => {
+                if let Some(item) = input_state.selected_item.take() {
+                    run_actions = true;
+                    let mut inventory = world.get_mut::<Inventory>(player).unwrap();
+                    let to_remove_index = inventory.items.iter().position(|i| &i.name() == &item.name()).unwrap();
+                    inventory.items.remove(to_remove_index);
+                    let mut actor = world.get_mut::<Actor>(player).unwrap();
+                    actor.action = Some(Action {
+                        cost: 1.,
+                        event: Events::ThrowItem(ThrowAction {
+                            item,
+                            target
+                        })
+                    });
+                    input_state.ui_action_type = None;
+                }
+            },
+            _ => {}
+        }
+    }
+
+    
+
+    if run_actions {
         run_actor_actions(world);
     }
 }
