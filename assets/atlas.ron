@@ -1,18 +1,10 @@
 {
-    "wapper": (
-        width: 32,
-        height: 32,
-        basename: "wapper",
-        frame: 0,
-        x: 176,
-        y: 0,
-    ),
-    "dot": (
+    "tree": (
         width: 16,
         height: 16,
-        basename: "dot",
+        basename: "tree",
         frame: 0,
-        x: 64,
+        x: 160,
         y: 0,
     ),
     "grass": (
@@ -23,12 +15,12 @@
         x: 80,
         y: 0,
     ),
-    "creature": (
+    "toadum": (
         width: 32,
         height: 32,
-        basename: "creature",
+        basename: "toadum",
         frame: 0,
-        x: 0,
+        x: 128,
         y: 0,
     ),
     "debu": (
@@ -39,28 +31,20 @@
         x: 32,
         y: 0,
     ),
-    "toadum": (
+    "dot": (
+        width: 16,
+        height: 16,
+        basename: "dot",
+        frame: 0,
+        x: 64,
+        y: 0,
+    ),
+    "wapper": (
         width: 32,
         height: 32,
-        basename: "toadum",
+        basename: "wapper",
         frame: 0,
-        x: 128,
-        y: 0,
-    ),
-    "tree": (
-        width: 16,
-        height: 16,
-        basename: "tree",
-        frame: 0,
-        x: 160,
-        y: 0,
-    ),
-    "minicoo": (
-        width: 16,
-        height: 16,
-        basename: "minicoo",
-        frame: 0,
-        x: 96,
+        x: 176,
         y: 0,
     ),
     "player": (
@@ -69,6 +53,22 @@
         basename: "player",
         frame: 0,
         x: 112,
+        y: 0,
+    ),
+    "creature": (
+        width: 32,
+        height: 32,
+        basename: "creature",
+        frame: 0,
+        x: 0,
+        y: 0,
+    ),
+    "minicoo": (
+        width: 16,
+        height: 16,
+        basename: "minicoo",
+        frame: 0,
+        x: 96,
         y: 0,
     ),
 }

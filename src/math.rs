@@ -348,6 +348,11 @@ impl Vector2Int {
             y: -1
         }
     }
+
+    pub fn distance(self, v: Vector2Int) -> i32 {
+        // Manhattan distance
+        (self.x - v.x).abs() + (self.y - v.y).abs()
+    }
 }
 
 impl From<Vector2> for Vector2Int {

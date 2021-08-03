@@ -1,4 +1,4 @@
-use crate::{components::{Actor, Captured, Item, PlayerController, Relationship, Relationships}, logging::{log_new_message}, map::get_map, math::{Vector2, Vector2Int}, queries::get_entity_grid_position, render::{Color, WHITE}};
+use crate::{components::{Actor, Captured, Item, PlayerController, Relationship, Relationships}, logging::{log_new_message}, map::get_map, math::{Vector2, Vector2Int}, pathfinding::a_star, queries::get_entity_grid_position, render::{Color, WHITE}, systems::create_bad_relationship};
 use hecs::{ Entity, World };
 use crate::components::{Invulnerable, Physics, Transform};
 
@@ -71,13 +71,7 @@ fn event_move_direction(world: &mut World, ent: Entity, action: &mut Vector2Int)
 
 fn event_throw_item(world: &mut World, ent: Entity, action: &mut ThrowAction) {
 
-    if let Ok(mut comp) = world.get_mut::<Actor>(action.target) {
-        if let Some(relationship) = comp.relationships.0.get_mut(&action.target) {
-            relationship.0 = relationship.0.min(-500);
-        } else {
-            comp.relationships.0.insert(action.target, Relationship(-500));
-        }
-    }
+    create_bad_relationship(world, ent, action.target);
 
     log_new_message(&format!("You threw a [BLUE {} ] at [RED {:?}]", action.item.name(), action.target));
 }
@@ -98,7 +92,23 @@ pub fn get_ai_action(world: &mut World, ent: Entity, relationships: Relationship
     let target = entities_nearby.iter().find(|e| relationships.is_enemy(*e.to_owned()));
 
     if let Some(target) = target {
-        // Attack
+        let target_position = world.get::<Transform>(*target).unwrap().grid_position;
+        let ent_position = world.get::<Transform>(ent).unwrap().grid_position;
+        if target_position.distance(ent_position) > 1 {
+            // generate path
+            let path = a_star(get_map().get_current_chunk().tiles.clone(), ent_position, target_position);
+            if let Some(mut path) = path {
+                // need to discard the last node which is the start position
+                path.pop();
+                return Action {
+                    cost: 1.,
+                    event: Events::MoveTo(*path.last().unwrap())
+                }
+            }
+
+        } else {
+            // attack
+        }
     }
 
 

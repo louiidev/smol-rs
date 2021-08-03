@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use hecs::{Entity, World};
 use crate::events::{Action, get_ai_action, run_event_system_hecs};
-use crate::components::{Physics, Actor};
+use crate::components::{Actor, Physics, Relationship};
 
 
 pub fn recusiverly_fire_action(world: &mut World, entities: &mut VecDeque<Entity>) {
@@ -71,6 +71,17 @@ pub fn run_actor_actions(world: &mut World) {
     
     
     recusiverly_fire_action(world, &mut entities);
+}
+
+
+pub fn create_bad_relationship(world: &mut World, entity: Entity, target: Entity) {
+    if let Ok(mut comp) = world.get_mut::<Actor>(target) {
+        if let Some(relationship) = comp.relationships.0.get_mut(&entity) {
+            relationship.0 = relationship.0.min(-500);
+        } else {
+            comp.relationships.0.insert(entity, Relationship(-500));
+        }
+    }
 }
     
 
