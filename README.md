@@ -6,17 +6,17 @@ This project isn't really for anyone else to use besides myself but I figured I 
 
 
 ### Current features
-Font rendering
-Sprite rendering
-Rect rendering
-Asesprite texture packing
+* Font rendering
+* Sprite rendering
+* Rect rendering
+* Asesprite texture packing
 
 
 ### Work in progress
 
-Renders using OpenGL
-SDL2 for platform layer
-Render batching
+* Renders using OpenGL
+* SDL2 for platform layer
+* Render batching
 
 
 ### CURRENT GOALS
