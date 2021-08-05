@@ -34,7 +34,7 @@ pub type TextAlignment = HorizontalAlign;
 pub struct TextQueueConfig {
     pub horizontal_alginment: TextAlignment,
     pub font_size: f32,
-    pub position: Vector2,
+    pub position: Vec2,
     pub color: Color,
 }
 
@@ -43,7 +43,7 @@ impl Default for TextQueueConfig {
         Self {
             horizontal_alginment: TextAlignment::Left,
             font_size: 16.,
-            position: Vector2::default(),
+            position: Vec2::default(),
             color: Color(0, 0, 0, 1.),
         }
     }
@@ -56,7 +56,7 @@ impl TextRenderer {
         let dejavu = FontArc::try_from_slice(include_bytes!("../assets/ThaleahFat.ttf")).unwrap();
         let glyph_brush: GlyphBrush<Vertex> = GlyphBrushBuilder::using_font(dejavu).build();
         let texture = GlGlyphTexture::new(glyph_brush.texture_dimensions());
-        let text_pipe = GlTextPipe::new(Vector2Int{ x, y }).unwrap();
+        let text_pipe = GlTextPipe::new(Vec2Int{ x, y }).unwrap();
 
         let max_image_dimension = {
             let mut value = 0;
@@ -72,7 +72,7 @@ impl TextRenderer {
         }
     }
 
-    pub fn queue_multiple(&mut self, text: Vec<(String, Color)>, position: Vector2, font_size: f32) -> Option<Rect> {
+    pub fn queue_multiple(&mut self, text: Vec<(String, Color)>, position: Vec2, font_size: f32) -> Option<Rect> {
         let scale = (font_size * get_window_scale().x).round();
         let mut section= Section::default()
             .with_screen_position((position.x, position.y))
@@ -144,7 +144,7 @@ impl TextRenderer {
     }
     
 
-    pub fn on_resize_window(&self, window_size: Vector2Int) {
+    pub fn on_resize_window(&self, window_size: Vec2Int) {
         self.text_pipe.update_geometry(window_size);
     }
 
@@ -208,7 +208,7 @@ impl TextRenderer {
     }
 }
 
-use crate::{core::{get_window_scale}, math::{Matrix, Vector2, Vector2Int, Vector3}, render::{Color, get_uniform_location}};
+use crate::{core::{get_window_scale}, math::{Matrix, Vec2, Vec2Int, Vec3}, render::{Color, get_uniform_location}};
 
 pub type Res<T> = Result<T, Box<dyn std::error::Error>>;
 /// `[left_top * 3, right_bottom * 2, tex_left_top * 2, tex_right_bottom * 2, color * 4]`
@@ -408,7 +408,7 @@ pub struct GlTextPipe {
 }
 
 impl GlTextPipe {
-    pub fn new(window_size: Vector2Int) -> Res<Self> {
+    pub fn new(window_size: Vec2Int) -> Res<Self> {
         let (w, h) = (window_size.x as f32, window_size.y as f32);
 
         let vs = compile_shader(include_str!("shader/text.vs"), gl::VERTEX_SHADER)?;
@@ -490,10 +490,10 @@ impl GlTextPipe {
         })
     }
 
-    pub fn set_offset(&self, offset: Vector2) {
+    pub fn set_offset(&self, offset: Vec2) {
         unsafe {
             gl::UseProgram(self.program);
-            let view = Matrix::translate(Vector3 { x: offset.x, y: offset.y, z: 0.0 });
+            let view = Matrix::translate(Vec3 { x: offset.x, y: offset.y, z: 0.0 });
 
             let float_view: [f32; 16] = view.into();
             gl::UniformMatrix4fv(
@@ -509,7 +509,7 @@ impl GlTextPipe {
     pub fn reset_offset(&self) {
         unsafe {
             gl::UseProgram(self.program);
-            let view = Matrix::translate(Vector3 { x: 0.0, y: 0.0, z: 0.0 });
+            let view = Matrix::translate(Vec3 { x: 0.0, y: 0.0, z: 0.0 });
 
             let float_view: [f32; 16] = view.into();
             gl::UniformMatrix4fv(
@@ -550,7 +550,7 @@ impl GlTextPipe {
         }
     }
 
-    pub fn update_geometry(&self, window_size: Vector2Int) {
+    pub fn update_geometry(&self, window_size: Vec2Int) {
         let (w, h) = (window_size.x as f32, window_size.y as f32);
         let projection: [f32; 16] = Matrix::ortho(0.0, w, 0.0, h, -100.0, 100.0).into();
 

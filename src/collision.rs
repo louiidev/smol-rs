@@ -1,8 +1,8 @@
-use crate::{math::Vector2Int, math::Rectangle};
+use crate::{math::Vec2Int, math::Rectangle};
 
 
 
-pub fn is_point_inside_rect(point: Vector2Int, x: i32, y: i32, width: i32, height: i32) -> bool {
+pub fn is_point_inside_rect(point: Vec2Int, x: i32, y: i32, width: i32, height: i32) -> bool {
     let point_x = point.x;
     let point_y = point.y;
 
@@ -10,7 +10,7 @@ pub fn is_point_inside_rect(point: Vector2Int, x: i32, y: i32, width: i32, heigh
     point_x > x && point_x <= width + x && point_y > y && point_y <= height + y
 }
 
-pub fn is_point_inside_rectangle(point: Vector2Int, rect: &Rectangle) -> bool {
+pub fn is_point_inside_rectangle(point: Vec2Int, rect: &Rectangle) -> bool {
     let point_x = point.x as f32;
     let point_y = point.y as f32;
     

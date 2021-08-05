@@ -4,14 +4,14 @@ use crate::core::{
     clear, end_scissor, get_text_bounds, get_window_size, queue_text, queue_text_ex, render_rect,
     render_text_queue, reset_offset, set_offset, start_scissor, MouseButton,
 };
-use crate::input::{get_mouse_pos, InputState};
-use crate::math::{Rectangle, Vector2};
+use crate::input::{get_mouse_pos, is_mouse_down, InputState};
+use crate::math::{Rectangle, Vec2};
 use crate::render::Color;
 use crate::text_render::{TextAlignment, TextQueueConfig};
 use glyph_brush::ab_glyph::Rect;
 use hecs::{Entity, World};
 
-use super::{line_border, UiEvent};
+use super::line_border;
 
 pub fn start_window(dimensions: &Rectangle) {
     let Rectangle { x, y, w, h } = *dimensions;
@@ -22,7 +22,7 @@ pub fn start_window(dimensions: &Rectangle) {
     render_text_queue();
     render_rect(x, y - 30., w, 30., Color(200, 200, 200, 1.));
     start_scissor(x as _, scissor_y as _, w as _, h as _);
-    set_offset(Vector2 { x, y });
+    set_offset(Vec2 { x, y });
 }
 
 pub fn end_window(dimensions: &Rectangle) {
@@ -33,7 +33,7 @@ pub fn end_window(dimensions: &Rectangle) {
 }
 
 pub struct WindowState {
-     pub selected: bool,
+    pub selected: bool,
 }
 
 pub struct ItemsWindow {
@@ -44,23 +44,21 @@ pub struct ItemsWindow {
 }
 
 impl ItemsWindow {
-    pub fn new(
-        items: Vec<Box<dyn Item>>,
-    ) -> Self {
+    pub fn new(items: Vec<Box<dyn Item>>) -> Self {
         Self {
             state: WindowState { selected: false },
             items,
             focus_index: None,
-            dimensions: Rectangle { x: 240., y: 110., w: 500., h: 300. },
+            dimensions: Rectangle {
+                x: 240.,
+                y: 110.,
+                w: 500.,
+                h: 300.,
+            },
         }
     }
 
-    pub fn set_items(&mut self, items: Vec<Box<dyn Item>>) {
-        self.items = items;
-    }
-
     pub fn update(&mut self, input_state: &mut InputState, world: &World, player: Entity) {
-
         if self.items.is_empty() || self.state.selected {
             let inventory = world.get::<Inventory>(player).unwrap();
             self.items = inventory.items.clone();
@@ -76,7 +74,7 @@ impl ItemsWindow {
             } else {
                 10.
             };
-            let bounds = get_text_bounds(item.name(), Vector2::new(0., y_pos), 14.).unwrap();
+            let bounds = get_text_bounds(item.name(), Vec2::new(0., y_pos), 14.).unwrap();
             let Rectangle { x, y, .. } = self.dimensions;
             let rect = Rectangle {
                 x: bounds.min.x + x,
@@ -87,19 +85,9 @@ impl ItemsWindow {
 
             if is_point_inside_rectangle(mouse_pos, &rect) {
                 self.focus_index = Some(index);
-
-                if let Some(ui_event) = input_state.ui_event {
-                    println!("ui event: {:?}", ui_event);
-                    match ui_event {
-                        UiEvent::MouseButtonDown(btn) => match btn {
-                            MouseButton::Left => {
-                                input_state.selected_item = Some(item.to_owned());
-                                self.state.selected = true;
-                            }
-                            _ => {}
-                        },
-                        _ => {}
-                    }
+                if is_mouse_down(MouseButton::Left) {
+                    input_state.selected_item = Some(item.to_owned());
+                    self.state.selected = true;
                 }
             }
 
@@ -113,7 +101,7 @@ impl ItemsWindow {
         queue_text_ex(
             "Items",
             TextQueueConfig {
-                position: Vector2::new(x + w / 2., y - 30.),
+                position: Vec2::new(x + w / 2., y - 30.),
                 font_size: 14.,
                 color: Color(1, 1, 1, 1.),
                 horizontal_alginment: TextAlignment::Center,
@@ -135,7 +123,7 @@ impl ItemsWindow {
 
             last_bounds = queue_text(
                 item.name(),
-                Vector2::new(10., y_pos),
+                Vec2::new(10., y_pos),
                 14.,
                 Color(255, 255, 255, 1.),
             );

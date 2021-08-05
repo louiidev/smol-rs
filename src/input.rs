@@ -1,23 +1,30 @@
-use std::collections::HashSet;
+use crate::components::{Actor, Inventory, Item};
+use crate::core::{get_context, get_window_scale, MouseButton};
+use crate::events::{Action, Events, ThrowAction};
+use crate::map::get_map;
+use crate::math::{Vec2, Vec2Int};
+use crate::pathfinding::a_star;
+use crate::queries::get_entity_grid_position;
+use crate::systems::run_actor_actions;
+use crate::ui::{self, ContextMenuAction};
+use crate::world_setup::WorldPlayer;
+use hashbrown::HashMap;
 use hecs::{Entity, World};
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::MouseState;
 use sdl2::rect::Point;
 use sdl2::EventPump;
-use crate::components::{Actor, Inventory, Item};
-use crate::core::{MouseButton, get_context, get_window_scale};
-use crate::events::{Action, Events, ThrowAction};
-use crate::map::get_map;
-use crate::math::{Vector2, Vector2Int};
-use crate::pathfinding::a_star;
-use crate::queries::get_entity_grid_position;
-use crate::systems::run_actor_actions;
-use crate::ui::{self, ContextMenuAction, UiEvent};
-use crate::world_setup::WorldPlayer;
+use std::collections::HashSet;
 
+#[derive(Hash, PartialEq, Eq)]
+pub enum InputTransition {
+    Released,
+    Down,
+    Pressed,
+}
 
-
-
+pub type KeypressCapture = (InputTransition, Keycode);
+pub type MouseButtonCapture = (InputTransition, MouseButton);
 
 pub struct Input {
     pub input_previous_keyboard_state: HashSet<Keycode>,
@@ -25,6 +32,8 @@ pub struct Input {
     pub previous_mouse_state: HashSet<MouseButton>,
     pub current_mouse_state: HashSet<MouseButton>,
     mouse_state: MouseState,
+    captured_keyboard_input: HashSet<(InputTransition, Keycode)>,
+    captured_mouse_input: HashSet<(InputTransition, MouseButton)>,
 }
 
 impl Input {
@@ -35,42 +44,65 @@ impl Input {
             previous_mouse_state: HashSet::new(),
             current_mouse_state: HashSet::new(),
             mouse_state: MouseState::from_sdl_state(0),
+            captured_keyboard_input: HashSet::new(),
+            captured_mouse_input: HashSet::new(),
         }
     }
 }
 
 impl Input {
     pub fn is_key_down(&self, key: Keycode) -> bool {
-        !self.input_previous_keyboard_state.contains(&key) && self.input_current_keyboard_state.contains(&key)
+        !self.input_previous_keyboard_state.contains(&key)
+            && self.input_current_keyboard_state.contains(&key)
+            && !self
+                .captured_keyboard_input
+                .contains(&(InputTransition::Down, key))
     }
 
     pub fn is_key_pressed(&self, key: Keycode) -> bool {
-        self.input_previous_keyboard_state.contains(&key) && self.input_current_keyboard_state.contains(&key)
+        self.input_previous_keyboard_state.contains(&key)
+            && self.input_current_keyboard_state.contains(&key)
+            && !self
+                .captured_keyboard_input
+                .contains(&(InputTransition::Pressed, key))
     }
 
     pub fn is_key_released(&self, key: Keycode) -> bool {
-        self.input_previous_keyboard_state.contains(&key) && !self.input_current_keyboard_state.contains(&key)
+        self.input_previous_keyboard_state.contains(&key)
+            && !self.input_current_keyboard_state.contains(&key)
+            && !self
+                .captured_keyboard_input
+                .contains(&(InputTransition::Released, key))
     }
 
     pub fn is_mouse_down(&self, key: MouseButton) -> bool {
-        !self.previous_mouse_state.contains(&key) && self.current_mouse_state.contains(&key)
+        !self.previous_mouse_state.contains(&key)
+            && self.current_mouse_state.contains(&key)
+            && !self
+                .captured_mouse_input
+                .contains(&(InputTransition::Down, key))
     }
 
     pub fn is_mouse_pressed(&self, key: MouseButton) -> bool {
-        self.previous_mouse_state.contains(&key) && self.current_mouse_state.contains(&key)
+        self.previous_mouse_state.contains(&key)
+            && self.current_mouse_state.contains(&key)
+            && !self
+                .captured_mouse_input
+                .contains(&(InputTransition::Pressed, key))
     }
 
     pub fn is_mouse_released(&self, key: MouseButton) -> bool {
-        self.previous_mouse_state.contains(&key) && !self.current_mouse_state.contains(&key)
+        self.previous_mouse_state.contains(&key)
+            && !self.current_mouse_state.contains(&key)
+            && !self
+                .captured_mouse_input
+                .contains(&(InputTransition::Released, key))
     }
 
     pub fn set_mouse_state(&mut self, events: &EventPump) {
         let state = events.mouse_state();
-        let keys = events
-            .mouse_state()
-            .pressed_mouse_buttons()
-            .collect();
-        
+        let keys = events.mouse_state().pressed_mouse_buttons().collect();
+
         self.previous_mouse_state = self.current_mouse_state.clone();
         self.current_mouse_state = keys;
         self.mouse_state = state;
@@ -84,18 +116,37 @@ impl Input {
             .collect();
         self.input_previous_keyboard_state = self.input_current_keyboard_state.clone();
         self.input_current_keyboard_state = keys;
+        self.captured_mouse_input = HashSet::default();
+        self.captured_keyboard_input = HashSet::default();
     }
 
-    pub fn get_mouse_pos(&mut self) -> Vector2Int {
-        Vector2Int::new(self.mouse_state.x(), self.mouse_state.y())
+    pub fn get_mouse_pos(&mut self) -> Vec2Int {
+        Vec2Int::new(self.mouse_state.x(), self.mouse_state.y())
+    }
+
+    pub fn set_captured_keypress(&mut self, captured_keypress: KeypressCapture) {
+        // Shouldnt be called more than once per key
+        assert_eq!(
+            self.captured_keyboard_input.contains(&captured_keypress),
+            false
+        );
+        self.captured_keyboard_input.insert(captured_keypress);
+    }
+
+    pub fn set_captured_mousepress(&mut self, captured_keypress: MouseButtonCapture) {
+        // Shouldnt be called more than once per key
+        assert_eq!(
+            self.captured_mouse_input.contains(&captured_keypress),
+            false
+        );
+        self.captured_mouse_input.insert(captured_keypress);
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ControlType {
     Mouse,
-    Keyboard(Vector2Int)
+    Keyboard(Vec2Int),
 }
 
 impl Default for ControlType {
@@ -104,23 +155,21 @@ impl Default for ControlType {
     }
 }
 
-
 // Different from the engine Input struct
 // This is more handling player actions for ui/world inputs
 #[derive(Debug, Default, Clone)]
 pub struct InputState {
-    pub path: Vec<Vector2Int>,
-    pub start_grid_path: Option<Vector2Int>,
-    pub end_grid_path: Option<Vector2Int>,
+    pub path: Vec<Vec2Int>,
+    pub start_grid_path: Option<Vec2Int>,
+    pub end_grid_path: Option<Vec2Int>,
     pub control_type: ControlType,
     pub ui_action_type: Option<ContextMenuAction>,
-    pub ui_event: Option<UiEvent>,
     pub world_input_block: bool,
-    pub context_menu_position: Option<Vector2>,
-    pub selected_item: Option<Box<dyn Item>>
+    pub context_menu_position: Option<Vec2>,
+    pub selected_item: Option<Box<dyn Item>>,
 }
 
-pub fn screen_to_grid(screen_pos: Vector2Int) -> Vector2Int {
+pub fn screen_to_grid(screen_pos: Vec2Int) -> Vec2Int {
     let scale = get_window_scale().x;
     let grid_scale = 16 * scale as i32;
     let grid_pos = screen_pos / grid_scale;
@@ -128,9 +177,7 @@ pub fn screen_to_grid(screen_pos: Vector2Int) -> Vector2Int {
     grid_pos
 }
 
-
 pub fn query_world_input(input_state: &mut InputState, world: &World, player: Entity) {
-
     if input_state.world_input_block {
         return;
     }
@@ -138,15 +185,15 @@ pub fn query_world_input(input_state: &mut InputState, world: &World, player: En
     let mut temp_pos = None;
 
     if is_key_down(Keycode::W) {
-        temp_pos = Some(Vector2Int::down())
+        temp_pos = Some(Vec2Int::down())
     } else if is_key_down(Keycode::S) {
-        temp_pos = Some(Vector2Int::up())
+        temp_pos = Some(Vec2Int::up())
     }
 
     if is_key_down(Keycode::A) {
-        temp_pos = Some(Vector2Int::left());
+        temp_pos = Some(Vec2Int::left());
     } else if is_key_down(Keycode::D) {
-        temp_pos = Some(Vector2Int::right());
+        temp_pos = Some(Vec2Int::right());
     }
 
     if temp_pos.is_some() {
@@ -170,7 +217,7 @@ pub fn query_world_input(input_state: &mut InputState, world: &World, player: En
             let path = a_star(
                 get_map().get_current_chunk().tiles.clone(),
                 input_state.start_grid_path.unwrap(),
-                input_state.end_grid_path.unwrap()
+                input_state.end_grid_path.unwrap(),
             );
 
             if path.is_some() {
@@ -180,7 +227,6 @@ pub fn query_world_input(input_state: &mut InputState, world: &World, player: En
             input_state.start_grid_path = None;
             input_state.end_grid_path = None;
         }
-
     } else if is_mouse_down(MouseButton::Left) {
         let player_pos = get_entity_grid_position(world, player);
         if player_pos == screen_to_grid(get_mouse_pos()) {
@@ -190,17 +236,8 @@ pub fn query_world_input(input_state: &mut InputState, world: &World, player: En
     }
 }
 
-pub fn query_ui_input(input_state: &mut InputState) {
-    if is_mouse_down(MouseButton::Left) {
-        input_state.ui_event = Some(UiEvent::MouseButtonDown(MouseButton::Left));
-    } else if is_mouse_down(MouseButton::Right) {
-        input_state.ui_event = Some(UiEvent::MouseButtonDown(MouseButton::Right));
-    }
-}
-
 pub fn update(input_state: &mut InputState, world: &mut World, player: Entity) {
     let mut run_actions = false;
-
 
     if let Some(position) = input_state.path.pop() {
         {
@@ -213,36 +250,44 @@ pub fn update(input_state: &mut InputState, world: &mut World, player: Entity) {
         run_actions = true;
     } else if let Some(ui_action_type) = input_state.ui_action_type {
         match ui_action_type {
-             ContextMenuAction::ThrowItem(target) => {
+            ContextMenuAction::ThrowItem(target) => {
                 if let Some(item) = input_state.selected_item.take() {
                     run_actions = true;
                     let mut inventory = world.get_mut::<Inventory>(player).unwrap();
-                    let to_remove_index = inventory.items.iter().position(|i| &i.name() == &item.name()).unwrap();
+                    let to_remove_index = inventory
+                        .items
+                        .iter()
+                        .position(|i| &i.name() == &item.name())
+                        .unwrap();
                     inventory.items.remove(to_remove_index);
                     let mut actor = world.get_mut::<Actor>(player).unwrap();
                     actor.action = Some(Action {
                         cost: 1.,
-                        event: Events::ThrowItem(ThrowAction {
-                            item,
-                            target
-                        })
+                        event: Events::ThrowItem(ThrowAction { item, target }),
                     });
                     input_state.ui_action_type = None;
                 }
-            },
+            }
             _ => {}
         }
     }
-
-    
 
     if run_actions {
         run_actor_actions(world);
     }
 }
 
+pub fn set_captured_mousepress(captured_keypress: MouseButtonCapture) {
+    get_context()
+        .input
+        .set_captured_mousepress(captured_keypress)
+}
 
-pub fn get_mouse_pos() -> Vector2Int {
+pub fn set_captured_keypress(captured_keypress: KeypressCapture) {
+    get_context().input.set_captured_keypress(captured_keypress)
+}
+
+pub fn get_mouse_pos() -> Vec2Int {
     get_context().input.get_mouse_pos()
 }
 

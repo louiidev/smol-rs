@@ -77,8 +77,8 @@ impl RenderBatch {
             0.5, 0.5,     1., 0.93, 0.24, 1.0,
         ];
 
-        //RenderBatch::gen_vertex_props(&mut verticies, 0, Vector2::new(50., 50.), Color(0.18 * 25.5, 0.6 * 255., 0.96 * 255., 255.));
-        // RenderBatch::gen_vertex_props(&mut verticies, 0, Vector2::new(150., 150.), Color(0.18 * 25.5, 0.6 * 255., 0.96 * 255., 255.));
+        //RenderBatch::gen_vertex_props(&mut verticies, 0, Vec2::new(50., 50.), Color(0.18 * 25.5, 0.6 * 255., 0.96 * 255., 255.));
+        // RenderBatch::gen_vertex_props(&mut verticies, 0, Vec2::new(150., 150.), Color(0.18 * 25.5, 0.6 * 255., 0.96 * 255., 255.));
 
         let indices: [u32; 12] = [0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4];
 
@@ -149,7 +149,7 @@ impl RenderBatch {
         }
     }
 
-    fn gen_vertex_props(verticies: &mut [f32; VERTICIES_LEN as usize], index: usize, position: Vector2, color: Color) {
+    fn gen_vertex_props(verticies: &mut [f32; VERTICIES_LEN as usize], index: usize, position: Vec2, color: Color) {
         let mut offset: usize = index * 4 * VERTEX_SIZE as usize;
         let mut x_add = 1.0;
         let mut y_add = 1.0;
@@ -208,7 +208,7 @@ impl RenderBatch {
         //     self.load_vertex_properties(i);
         // }
 
-        let model = Matrix::translate(Vector3 {
+        let model = Matrix::translate(Vec3 {
             x: 0.,
             y: 0.,
             z: 0.0,

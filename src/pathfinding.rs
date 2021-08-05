@@ -1,12 +1,12 @@
 use hashbrown::HashMap;
-use crate::{map::Tile, math::{Vector2, Vector2Int}};
+use crate::{map::Tile, math::{Vec2, Vec2Int}};
 
 // G: Distance to current node
 // H: Distance to end node
 // F: the combined value of G & H
 
 
-fn reconstruct_path(nodes: &HashMap<Vector2Int, Tile>, last: Vector2Int) -> Option<Vec<Vector2Int>> {
+fn reconstruct_path(nodes: &HashMap<Vec2Int, Tile>, last: Vec2Int) -> Option<Vec<Vec2Int>> {
     let mut path = vec![last];
     let mut current = nodes.get(&last)?;
     while let Some(previous) = current.previous {
@@ -18,10 +18,10 @@ fn reconstruct_path(nodes: &HashMap<Vector2Int, Tile>, last: Vector2Int) -> Opti
 }
 
 
-pub fn a_star(mut nodes: HashMap<Vector2Int, Tile>, start: Vector2Int, mut end: Vector2Int) -> Option<Vec<Vector2Int>> {
+pub fn a_star(mut nodes: HashMap<Vec2Int, Tile>, start: Vec2Int, mut end: Vec2Int) -> Option<Vec<Vec2Int>> {
 
-    let mut open_nodes: Vec<Vector2Int> = Vec::default();
-    let mut closed_nodes: Vec<Vector2Int> = Vec::default();
+    let mut open_nodes: Vec<Vec2Int> = Vec::default();
+    let mut closed_nodes: Vec<Vec2Int> = Vec::default();
     
 
     open_nodes.push(start);
@@ -121,29 +121,29 @@ pub fn a_star(mut nodes: HashMap<Vector2Int, Tile>, start: Vector2Int, mut end: 
 }
 
 
-fn manhattan_heuristic(current: Vector2Int, target: Vector2Int) -> i32 {
+fn manhattan_heuristic(current: Vec2Int, target: Vec2Int) -> i32 {
     (current.x - target.x).abs() + (current.y - target.y).abs()
 }
 
-fn heuristic(current: Vector2Int, target: Vector2Int) -> f32 {
-    let pos: Vector2 = current.into();
+fn heuristic(current: Vec2Int, target: Vec2Int) -> f32 {
+    let pos: Vec2 = current.into();
     pos.distance(target.into())
 }
 
 
-fn get_neighbours_valid_positions(nodes: &HashMap<Vector2Int, Tile>, base_position: Vector2Int) -> Vec<Vector2Int> {
-    let mut neighbours: Vec<Vector2Int> = Vec::default();
+fn get_neighbours_valid_positions(nodes: &HashMap<Vec2Int, Tile>, base_position: Vec2Int) -> Vec<Vec2Int> {
+    let mut neighbours: Vec<Vec2Int> = Vec::default();
     
     
     let positions = [
         // West
-        Vector2Int::new(base_position.x - 1, base_position.y),
+        Vec2Int::new(base_position.x - 1, base_position.y),
         // East
-        Vector2Int::new(base_position.x + 1, base_position.y),
+        Vec2Int::new(base_position.x + 1, base_position.y),
         // South
-        Vector2Int::new(base_position.x, base_position.y - 1),
+        Vec2Int::new(base_position.x, base_position.y - 1),
         // North
-        Vector2Int::new(base_position.x, base_position.y + 1),
+        Vec2Int::new(base_position.x, base_position.y + 1),
     ];
 
 
@@ -170,7 +170,7 @@ mod test {
 
         for x in 0..6 {
             for y in 0..6 {
-                nodes.insert(Vector2Int::new(x, y), Tile {
+                nodes.insert(Vec2Int::new(x, y), Tile {
                     walkable: true,
                     ..Default::default()
                 });
@@ -178,7 +178,7 @@ mod test {
         }
 
 
-        let path = a_star(nodes, Vector2Int::default(), Vector2Int::new(5, 5));
+        let path = a_star(nodes, Vec2Int::default(), Vec2Int::new(5, 5));
         assert_eq!(path.is_some(), true);
     }
 
@@ -189,7 +189,7 @@ mod test {
 
         for x in 0..6 {
             for y in 0..6 {
-                nodes.insert(Vector2Int::new(x, y), Tile {
+                nodes.insert(Vec2Int::new(x, y), Tile {
                     walkable: true,
                     ..Default::default()
                 });
@@ -197,7 +197,7 @@ mod test {
         }
     
 
-        let path = a_star(nodes, Vector2Int::default(), Vector2Int::new(6, 6));
+        let path = a_star(nodes, Vec2Int::default(), Vec2Int::new(6, 6));
         assert_eq!(path.is_none(), true);
     }
 

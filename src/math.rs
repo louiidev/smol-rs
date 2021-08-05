@@ -12,7 +12,7 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    pub fn add_padding(&mut self, expand_by: Vector2) {
+    pub fn add_padding(&mut self, expand_by: Vec2) {
         self.x-= expand_by.x;
         self.y-= expand_by.y;
         self.w+= expand_by.x * 2.;
@@ -38,12 +38,12 @@ pub fn clamp(min: f32, max: f32, value: f32) -> f32 {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub struct Vector2 {
+pub struct Vec2 {
     pub x: f32,
     pub y: f32
 }
 
-impl std::hash::Hash for Vector2 {
+impl std::hash::Hash for Vec2 {
     fn hash<H>(&self, state: &mut H)
     where
         H: std::hash::Hasher,
@@ -53,18 +53,18 @@ impl std::hash::Hash for Vector2 {
     }
 }
 
-impl Eq for Vector2 {}
+impl Eq for Vec2 {}
 
-impl Vector2 {
+impl Vec2 {
     pub fn new(x: f32, y: f32) -> Self {
-        Vector2 {
+        Vec2 {
             x,
             y
         }
     }
 
     pub fn default() -> Self {
-        Vector2 {
+        Vec2 {
             x: 0.0,
             y: 0.0
         }
@@ -73,7 +73,7 @@ impl Vector2 {
         ((self.x * self.x) + (self.y * self.y)).sqrt()
     }
 
-    pub fn dot(self, v: Vector2) -> f32 {
+    pub fn dot(self, v: Vec2) -> f32 {
         self.x * v.x + self.y * v.y
     }
 
@@ -82,12 +82,12 @@ impl Vector2 {
         *self /= self.length();
     }
 
-    /// Returns a new `Vector2` with normalized components from the current vector.
-    pub fn normalized(&self) -> Vector2 {
+    /// Returns a new `Vec2` with normalized components from the current vector.
+    pub fn normalized(&self) -> Vec2 {
         *self / self.length()
     }
 
-    pub fn distance(self, v: Vector2) -> f32 {
+    pub fn distance(self, v: Vec2) -> f32 {
         let x = self.x - v.x;
         let y = self.y - v.y;
 
@@ -95,138 +95,138 @@ impl Vector2 {
     }
 }
 
-impl Add for Vector2 {
-    type Output = Vector2;
-    fn add(self, v: Vector2) -> Self {
-        Vector2 {
+impl Add for Vec2 {
+    type Output = Vec2;
+    fn add(self, v: Vec2) -> Self {
+        Vec2 {
             x: self.x + v.x,
             y: self.y + v.y,
         }
     }
 }
 
-impl Add<f32> for Vector2 {
-    type Output = Vector2;
+impl Add<f32> for Vec2 {
+    type Output = Vec2;
     fn add(self, value: f32) -> Self {
-        Vector2 {
+        Vec2 {
             x: self.x + value,
             y: self.y + value,
         }
     }
 }
 
-impl AddAssign for Vector2 {
-    fn add_assign(&mut self, v: Vector2) {
+impl AddAssign for Vec2 {
+    fn add_assign(&mut self, v: Vec2) {
         *self = *self + v;
     }
 }
 
-impl AddAssign<f32> for Vector2 {
+impl AddAssign<f32> for Vec2 {
     fn add_assign(&mut self, value: f32) {
         *self = *self + value;
     }
 }
 
-impl Sub for Vector2 {
-    type Output = Vector2;
-    fn sub(self, v: Vector2) -> Self {
-        Vector2 {
+impl Sub for Vec2 {
+    type Output = Vec2;
+    fn sub(self, v: Vec2) -> Self {
+        Vec2 {
             x: self.x - v.x,
             y: self.y - v.y,
         }
     }
 }
 
-impl Sub<f32> for Vector2 {
-    type Output = Vector2;
+impl Sub<f32> for Vec2 {
+    type Output = Vec2;
     fn sub(self, value: f32) -> Self {
-        Vector2 {
+        Vec2 {
             x: self.x - value,
             y: self.y - value,
         }
     }
 }
 
-impl SubAssign for Vector2 {
-    fn sub_assign(&mut self, v: Vector2) {
+impl SubAssign for Vec2 {
+    fn sub_assign(&mut self, v: Vec2) {
         *self = *self - v;
     }
 }
 
-impl SubAssign<f32> for Vector2 {
+impl SubAssign<f32> for Vec2 {
     fn sub_assign(&mut self, value: f32) {
         *self = *self - value;
     }
 }
 
-impl Mul for Vector2 {
-    type Output = Vector2;
-    fn mul(self, v: Vector2) -> Self {
-        Vector2 {
+impl Mul for Vec2 {
+    type Output = Vec2;
+    fn mul(self, v: Vec2) -> Self {
+        Vec2 {
             x: self.x * v.x,
             y: self.y * v.y,
         }
     }
 }
 
-impl Mul<f32> for Vector2 {
-    type Output = Vector2;
+impl Mul<f32> for Vec2 {
+    type Output = Vec2;
     fn mul(self, value: f32) -> Self {
-        Vector2 {
+        Vec2 {
             x: self.x * value,
             y: self.y * value,
         }
     }
 }
 
-impl MulAssign for Vector2 {
-    fn mul_assign(&mut self, v: Vector2) {
+impl MulAssign for Vec2 {
+    fn mul_assign(&mut self, v: Vec2) {
         *self = *self * v;
     }
 }
 
-impl MulAssign<f32> for Vector2 {
+impl MulAssign<f32> for Vec2 {
     fn mul_assign(&mut self, value: f32) {
         *self = *self * value;
     }
 }
 
-impl Div for Vector2 {
-    type Output = Vector2;
-    fn div(self, v: Vector2) -> Self {
-        Vector2 {
+impl Div for Vec2 {
+    type Output = Vec2;
+    fn div(self, v: Vec2) -> Self {
+        Vec2 {
             x: self.x / v.x,
             y: self.y / v.y,
         }
     }
 }
 
-impl Div<f32> for Vector2 {
-    type Output = Vector2;
+impl Div<f32> for Vec2 {
+    type Output = Vec2;
     fn div(self, value: f32) -> Self {
-        Vector2 {
+        Vec2 {
             x: self.x / value,
             y: self.y / value,
         }
     }
 }
 
-impl DivAssign for Vector2 {
-    fn div_assign(&mut self, v: Vector2) {
+impl DivAssign for Vec2 {
+    fn div_assign(&mut self, v: Vec2) {
         *self = *self / v;
     }
 }
 
-impl DivAssign<f32> for Vector2 {
+impl DivAssign<f32> for Vec2 {
     fn div_assign(&mut self, value: f32) {
         *self = *self / value;
     }
 }
 
-impl Neg for Vector2 {
-    type Output = Vector2;
+impl Neg for Vec2 {
+    type Output = Vec2;
     fn neg(self) -> Self {
-        Vector2 {
+        Vec2 {
             x: -self.x,
             y: -self.y,
         }
@@ -236,15 +236,15 @@ impl Neg for Vector2 {
 
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub struct Vector3 {
+pub struct Vec3 {
     pub x: f32,
     pub y: f32,
     pub z: f32
 }
 
-impl Vector3 {
+impl Vec3 {
     pub fn new(x: f32, y: f32, z: f32) -> Self {
-        Vector3 {
+        Vec3 {
             x,
             y,
             z
@@ -252,7 +252,7 @@ impl Vector3 {
     }
 
     pub fn default() -> Self {
-        Vector3 {
+        Vec3 {
             x: 0.0,
             y: 0.0,
             z: 0.0
@@ -262,16 +262,16 @@ impl Vector3 {
 
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub struct Vector4 {
+pub struct Vec4 {
     pub x: f32,
     pub y: f32,
     pub z: f32,
     pub w: f32,
 }
 
-impl Vector4 {
+impl Vec4 {
     pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
-        Vector4 {
+        Vec4 {
             x,
             y,
             z,
@@ -280,7 +280,7 @@ impl Vector4 {
     }
 
     pub fn default() -> Self {
-        Vector4 {
+        Vec4 {
             x: 0.,
             y: 0.,
             z: 0.,
@@ -289,9 +289,9 @@ impl Vector4 {
     }
 }
 
-impl From<Vector3> for Vector4 {
-    fn from(item: Vector3) -> Self {
-        Vector4 {
+impl From<Vec3> for Vec4 {
+    fn from(item: Vec3) -> Self {
+        Vec4 {
             x: item.x,
             y: item.y,
             z: item.z,
@@ -301,81 +301,81 @@ impl From<Vector3> for Vector4 {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
-pub struct Vector2Int {
+pub struct Vec2Int {
     pub x: i32,
     pub y: i32
 }
 
-impl Vector2Int {
+impl Vec2Int {
     pub fn new(x: i32, y: i32) -> Self {
-        Vector2Int {
+        Vec2Int {
             x,
             y
         }
     }
 
     pub fn default() -> Self {
-        Vector2Int {
+        Vec2Int {
             x: 0,
             y: 0
         }
     }
 
     pub fn right() -> Self {
-        Vector2Int {
+        Vec2Int {
             x: 1,
             y: 0
         }
     }
 
     pub fn up() -> Self {
-        Vector2Int {
+        Vec2Int {
             x: 0,
             y: 1
         }
     }
 
     pub fn left() -> Self {
-        Vector2Int {
+        Vec2Int {
             x: -1,
             y: 0
         }
     }
 
     pub fn down() -> Self {
-        Vector2Int {
+        Vec2Int {
             x: 0,
             y: -1
         }
     }
 
-    pub fn distance(self, v: Vector2Int) -> i32 {
+    pub fn distance(self, v: Vec2Int) -> i32 {
         // Manhattan distance
         (self.x - v.x).abs() + (self.y - v.y).abs()
     }
 }
 
-impl From<Vector2> for Vector2Int {
-    fn from(item: Vector2) -> Self {
-        Vector2Int {
+impl From<Vec2> for Vec2Int {
+    fn from(item: Vec2) -> Self {
+        Vec2Int {
             x: item.x as _,
             y: item.y as _,
         }
     }
 }
 
-impl From<Vector2Int> for Vector2 {
-    fn from(item: Vector2Int) -> Self {
-        Vector2 {
+impl From<Vec2Int> for Vec2 {
+    fn from(item: Vec2Int) -> Self {
+        Vec2 {
             x: item.x as f32,
             y: item.y as f32,
         }
     }
 }
 
-impl From<Vector2> for Vector3 {
-    fn from(item: Vector2) -> Self {
-        Vector3 {
+impl From<Vec2> for Vec3 {
+    fn from(item: Vec2) -> Self {
+        Vec3 {
             x: item.x,
             y: item.y,
             z: 0.0
@@ -383,48 +383,48 @@ impl From<Vector2> for Vector3 {
     }
 }
 
-impl AddAssign for Vector2Int {
-    fn add_assign(&mut self, v: Vector2Int) {
+impl AddAssign for Vec2Int {
+    fn add_assign(&mut self, v: Vec2Int) {
         *self = *self + v;
     }
 }
 
 
 
-impl Add for Vector2Int {
-    type Output = Vector2Int;
-    fn add(self, v: Vector2Int) -> Self {
-        Vector2Int {
+impl Add for Vec2Int {
+    type Output = Vec2Int;
+    fn add(self, v: Vec2Int) -> Self {
+        Vec2Int {
             x: self.x + v.x,
             y: self.y + v.y,
         }
     }
 }
 
-impl Add<i32> for Vector2Int {
-    type Output = Vector2Int;
+impl Add<i32> for Vec2Int {
+    type Output = Vec2Int;
     fn add(self, value: i32) -> Self {
-        Vector2Int {
+        Vec2Int {
             x: self.x + value,
             y: self.y + value,
         }
     }
 }
 
-impl Mul for Vector2Int {
-    type Output = Vector2Int;
-    fn mul(self, v: Vector2Int) -> Self {
-        Vector2Int {
+impl Mul for Vec2Int {
+    type Output = Vec2Int;
+    fn mul(self, v: Vec2Int) -> Self {
+        Vec2Int {
             x: self.x * v.x,
             y: self.y * v.y,
         }
     }
 }
 
-impl Mul<i32> for Vector2Int {
-    type Output = Vector2Int;
+impl Mul<i32> for Vec2Int {
+    type Output = Vec2Int;
     fn mul(self, value: i32) -> Self {
-        Vector2Int {
+        Vec2Int {
             x: self.x * value,
             y: self.y * value,
         }
@@ -432,79 +432,79 @@ impl Mul<i32> for Vector2Int {
 }
 
 
-impl MulAssign for Vector2Int {
-    fn mul_assign(&mut self, v: Vector2Int) {
+impl MulAssign for Vec2Int {
+    fn mul_assign(&mut self, v: Vec2Int) {
         *self = *self * v;
     }
 }
 
-impl MulAssign<i32> for Vector2Int {
+impl MulAssign<i32> for Vec2Int {
     fn mul_assign(&mut self, value: i32) {
         *self = *self * value;
     }
 }
 
 
-impl Div for Vector2Int {
-    type Output = Vector2Int;
-    fn div(self, v: Vector2Int) -> Self {
-        Vector2Int {
+impl Div for Vec2Int {
+    type Output = Vec2Int;
+    fn div(self, v: Vec2Int) -> Self {
+        Vec2Int {
             x: self.x / v.x,
             y: self.y / v.y,
         }
     }
 }
 
-impl Div<i32> for Vector2Int {
-    type Output = Vector2Int;
+impl Div<i32> for Vec2Int {
+    type Output = Vec2Int;
     fn div(self, value: i32) -> Self {
-        Vector2Int {
+        Vec2Int {
             x: self.x / value,
             y: self.y / value,
         }
     }
 }
 
-impl DivAssign for Vector2Int {
-    fn div_assign(&mut self, v: Vector2Int) {
+impl DivAssign for Vec2Int {
+    fn div_assign(&mut self, v: Vec2Int) {
         *self = *self / v;
     }
 }
 
-impl DivAssign<i32> for Vector2Int {
+impl DivAssign<i32> for Vec2Int {
     fn div_assign(&mut self, value: i32) {
         *self = *self / value;
     }
 }
 
 
-impl Sub for Vector2Int {
-    type Output = Vector2Int;
-    fn sub(self, v: Vector2Int) -> Self {
-        Vector2Int {
+impl Sub for Vec2Int {
+    type Output = Vec2Int;
+    fn sub(self, v: Vec2Int) -> Self {
+        Vec2Int {
             x: self.x - v.x,
             y: self.y - v.y,
         }
     }
 }
 
-impl Sub<i32> for Vector2Int {
-    type Output = Vector2Int;
+impl Sub<i32> for Vec2Int {
+    type Output = Vec2Int;
     fn sub(self, value: i32) -> Self {
-        Vector2Int {
+        Vec2Int {
             x: self.x - value,
             y: self.y - value,
         }
     }
 }
 
-impl SubAssign for Vector2Int {
-    fn sub_assign(&mut self, v: Vector2Int) {
+impl SubAssign for Vec2Int {
+    fn sub_assign(&mut self, v: Vec2Int) {
         *self = *self - v;
     }
 }
 
-impl SubAssign<i32> for Vector2Int {
+impl SubAssign<i32> for Vec2Int {
     fn sub_assign(&mut self, value: i32) {
         *self = *self - value;
     }
@@ -534,7 +534,7 @@ impl From<Matrix> for [f32; 16] {
 
 
 impl Matrix {
-    pub fn translate(base: Vector3) -> Self {
+    pub fn translate(base: Vec3) -> Self {
         Matrix {
             m0: 1.0, m4: 0.0, m8: 0.0, m12: base.x,
             m1: 0.0, m5: 1.0, m9: 0.0, m13: base.y,
@@ -543,7 +543,7 @@ impl Matrix {
         }
     }
 
-    pub fn scale(&mut self, scale: Vector2) {
+    pub fn scale(&mut self, scale: Vec2) {
         self.m0 *= scale.x;
 		self.m5 *= scale.y;
     }

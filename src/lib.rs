@@ -98,10 +98,10 @@ pub mod core {
     pub const BASE_RES_H: f32 = RENDER_RES_H as f32 * RENDER_SCALE;
 
 
-    pub fn get_window_scale() -> Vector2 {
+    pub fn get_window_scale() -> Vec2 {
         let ctx = get_context();
 
-        Vector2 {
+        Vec2 {
             x: ctx.window_size.x as f32 / RENDER_RES_W as f32,
             y: ctx.window_size.y as f32 / RENDER_RES_H as f32
         }
@@ -109,8 +109,8 @@ pub mod core {
 
     
     pub fn get_window_scale_clamped() -> f32 {
-        let pixel_size = Vector2 { x: RENDER_RES_W as f32, y: RENDER_RES_H as f32 };
-        let window_size: Vector2 = get_context().window_size.into();
+        let pixel_size = Vec2 { x: RENDER_RES_W as f32, y: RENDER_RES_H as f32 };
+        let window_size: Vec2 = get_context().window_size.into();
         let value = (window_size / pixel_size).x;
         clamp(2., 5., value)
     }
@@ -145,7 +145,7 @@ pub mod core {
         TEXT_RENDER_CONTEXT.lock().unwrap()
     }
 
-    pub fn get_text_bounds(text: &str, position: Vector2, font_size: f32) -> Option<Rect> {
+    pub fn get_text_bounds(text: &str, position: Vec2, font_size: f32) -> Option<Rect> {
         get_text_render_context().get_text_bounds(text, TextQueueConfig {
             position,
             font_size,
@@ -157,7 +157,7 @@ pub mod core {
         get_text_render_context().get_text_bounds(text, text_config)
     }
 
-    pub fn queue_text(text: &str, position: Vector2, font_size: f32, color: Color) -> Option<Rect> {
+    pub fn queue_text(text: &str, position: Vec2, font_size: f32, color: Color) -> Option<Rect> {
         queue_text_ex(text, TextQueueConfig {
             position,
             font_size,
@@ -170,7 +170,7 @@ pub mod core {
         get_text_render_context().queue_text_ex(text, text_config)
     }
 
-    pub fn queue_multiple_text(text: Vec<(String, Color)>, position: Vector2, font_size: f32) -> Option<Rect> {
+    pub fn queue_multiple_text(text: Vec<(String, Color)>, position: Vec2, font_size: f32) -> Option<Rect> {
         get_text_render_context().queue_multiple(text, position, font_size)
     }
 
@@ -187,7 +187,7 @@ pub mod core {
         Renderer::clear(color);
     }
 
-    pub fn render_framebuffer_scale(texture: &Texture, position: Vector2, scale: Vector2) {
+    pub fn render_framebuffer_scale(texture: &Texture, position: Vec2, scale: Vec2) {
         get_render_context().framebuffer_texture_scale(texture, position, scale);
     }
 
@@ -205,16 +205,16 @@ pub mod core {
         Texture::load_from_bytes(bytes)
     }
 
-    pub fn render_texture(texture: &Texture, position: Vector2) {
+    pub fn render_texture(texture: &Texture, position: Vec2) {
         get_render_context().texture(texture, position);
     }
 
-    pub fn render_texture_scale(texture: &Texture, position: Vector2, scale: f32) {
+    pub fn render_texture_scale(texture: &Texture, position: Vec2, scale: f32) {
         get_render_context().texture_scale(texture, position, scale);
     }
 
     
-    pub fn render_texture_partial(texture: &PartialTexture, position: Vector2) {
+    pub fn render_texture_partial(texture: &PartialTexture, position: Vec2) {
         get_render_context().render_texture_partial(&texture, position);
     }
 
@@ -226,7 +226,7 @@ pub mod core {
         Renderer::end_scissor();
     }
 
-    // pub fn render_texture_to_rect(texture: &Texture, position: Vector2, ) {
+    // pub fn render_texture_to_rect(texture: &Texture, position: Vec2, ) {
     //     get_render_context().texture_rect_scale(&texture, )
     // }
 
@@ -238,7 +238,7 @@ pub mod core {
         get_render_context().frame_buffer.unbind();
     }
 
-    pub fn render_framebuffer(position: Vector2, scale: f32) {
+    pub fn render_framebuffer(position: Vec2, scale: f32) {
         let render_context = get_render_context();
         let texture = &render_context.frame_buffer.texture;
         
@@ -246,15 +246,15 @@ pub mod core {
     }
 
 
-    pub fn get_window_size() -> Vector2Int {
+    pub fn get_window_size() -> Vec2Int {
         get_context().window_size
     }
 
 
-    pub fn get_screen_center() -> Vector2Int {
+    pub fn get_screen_center() -> Vec2Int {
         let ctx = get_context();
         let (x, y) = ctx.window.size();
-        Vector2Int::new(x as i32 / 2, y as i32 / 2)
+        Vec2Int::new(x as i32 / 2, y as i32 / 2)
     }
 
     pub fn is_running() -> bool {
@@ -264,7 +264,7 @@ pub mod core {
         ctx.running
     }
 
-    pub fn set_offset(offset: Vector2) {
+    pub fn set_offset(offset: Vec2) {
         get_render_context().set_offset(offset);
         get_text_render_context().text_pipe.set_offset(offset);
     }
@@ -292,7 +292,7 @@ pub mod core {
                         WindowEvent::Resized(w, h) => {
                             get_render_context().set_viewport(0.0, 0.0, w as u32, h as u32);
                             get_render_context().set_projection(w as f32, h as f32);
-                            get_text_render_context().on_resize_window(Vector2Int { x: w, y: h });
+                            get_text_render_context().on_resize_window(Vec2Int { x: w, y: h });
                             ctx.window_size.x = w;
                             ctx.window_size.y = h;
                         },
@@ -343,7 +343,7 @@ pub mod core {
        
         get_render_context().set_viewport(0.0, 0.0, screen_width as u32, screen_height as u32);
         get_render_context().set_projection(screen_width as f32, screen_height as f32);
-        set_offset(Vector2::default());
+        set_offset(Vec2::default());
         let loop_helper = LoopHelper::builder()
             .report_interval_s(0.5) // report every half a second
             .build_with_target_rate(60.0); // limit to 250 FPS if possible
@@ -358,7 +358,7 @@ pub mod core {
                     time_step: TimeStep::new(),
                     delta_time: 1. / 60.,
                     input: Input::new(),
-                    window_size: Vector2Int {
+                    window_size: Vec2Int {
                         x: screen_width as i32,
                         y: screen_height as i32
                     },
@@ -383,7 +383,7 @@ pub mod core {
         time_step: TimeStep,
         pub input: Input,
         delta_time: f32,
-        pub window_size: Vector2Int,
+        pub window_size: Vec2Int,
         loop_helper: LoopHelper,
         timer_state: TimerState,
         camera: Camera

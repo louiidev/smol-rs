@@ -1,4 +1,4 @@
-use crate::{core::get_context, math::{Matrix, Vector2}};
+use crate::{core::get_context, math::{Matrix, Vec2}};
 
 
 
@@ -19,9 +19,9 @@ impl Camera {
 
 impl Camera {
     pub fn get_projection(&self) -> Matrix {
-        let window_size: Vector2 = get_context().window_size.into();
+        let window_size: Vec2 = get_context().window_size.into();
         let mut proj = Matrix::ortho(0.0, window_size.x, window_size.y, 0.0, -100.0, 100.0);
-        proj.scale(Vector2::new(1., 1.) * self.zoom);
+        proj.scale(Vec2::new(1., 1.) * self.zoom);
 
         proj
     }

@@ -88,7 +88,7 @@ pub fn create_bad_relationship(world: &mut World, entity: Entity, target: Entity
 
 #[cfg(test)]
 mod test {
-    use crate::{components::Transform, events::Events, math::Vector2Int, world_setup::setup_world};
+    use crate::{components::Transform, events::Events, math::Vec2Int, world_setup::setup_world};
 
     use super::*;
 
@@ -102,12 +102,12 @@ mod test {
             let mut actor = world.get_mut::<Actor>(player).unwrap();
             actor.action = Some(Action {
                 cost: 1.,
-                event: Events::MoveTo(player_pos + Vector2Int::new(1, 0))
+                event: Events::MoveTo(player_pos + Vec2Int::new(1, 0))
             });
         }
        
         run_actor_actions(&mut world);
-        player_pos+= Vector2Int::new(1, 0);
+        player_pos+= Vec2Int::new(1, 0);
         let new_player_pos = {
             world.get_mut::<Transform>(player).unwrap().grid_position
         };

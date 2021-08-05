@@ -1,7 +1,7 @@
 use hashbrown::HashMap;
 use serde::{ Deserialize};
 use ron::{de::{from_str}};
-use crate::{core::load_texture_from_bytes, math::{Vector2Int}, render::{PartialTexture, Texture}};
+use crate::{core::load_texture_from_bytes, math::{Vec2Int}, render::{PartialTexture, Texture}};
 
 
 #[derive(Debug, Deserialize)]
@@ -33,6 +33,6 @@ impl TexturePacker {
 
     pub fn get_texture(&self, name: &str) -> PartialTexture {
         let data = self.data.get(name).unwrap();
-        self.texture.create_partial(data.width, data.height, Vector2Int::new(data.x as i32 , data.y as i32))
+        self.texture.create_partial(data.width, data.height, Vec2Int::new(data.x as i32 , data.y as i32))
     }
 }

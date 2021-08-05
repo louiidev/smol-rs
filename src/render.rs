@@ -33,11 +33,11 @@ pub struct PartialTexture {
     texture_height: u32,
     width: u32,
     height: u32,
-    position: Vector2Int,
+    position: Vec2Int,
 }
 
 impl Texture {
-    pub fn create_partial(&self, width: u32, height: u32, position: Vector2Int) -> PartialTexture {
+    pub fn create_partial(&self, width: u32, height: u32, position: Vec2Int) -> PartialTexture {
         PartialTexture {
             texture_id: self.id,
             texture_width: self.width,
@@ -429,7 +429,7 @@ pub struct Renderer {
     ibo: u32,
     tbo: u32,
     default_texture: Texture,
-    screen_scale: Vector2,
+    screen_scale: Vec2,
     pub frame_buffer: FrameBuffer,
 }
 
@@ -533,7 +533,7 @@ impl Renderer {
                 height: 1,
                 id: white_tex_id,
             },
-            screen_scale: Vector2::new(1., 1.),
+            screen_scale: Vec2::new(1., 1.),
             frame_buffer: FrameBuffer::new(w, h)
         }
     }
@@ -570,10 +570,10 @@ impl Renderer {
         }
     }
 
-    pub fn set_offset(&self, offset: Vector2) {
+    pub fn set_offset(&self, offset: Vec2) {
         unsafe {
             gl::UseProgram(self.shader_2d);
-            let view = Matrix::translate(Vector3 { x: offset.x, y: offset.y, z: 0.0 });
+            let view = Matrix::translate(Vec3 { x: offset.x, y: offset.y, z: 0.0 });
 
             let float_view: [f32; 16] = view.into();
             gl::UniformMatrix4fv(
@@ -589,7 +589,7 @@ impl Renderer {
     pub fn reset_offset(&self) {
         unsafe {
             gl::UseProgram(self.shader_2d);
-            let view = Matrix::translate(Vector3 { x: 0.0, y: 0.0, z: 0.0 });
+            let view = Matrix::translate(Vec3 { x: 0.0, y: 0.0, z: 0.0 });
 
             let float_view: [f32; 16] = view.into();
             gl::UniformMatrix4fv(
@@ -602,13 +602,13 @@ impl Renderer {
         }
     }
 
-    pub fn set_scale(&mut self, scale: Vector2) {
+    pub fn set_scale(&mut self, scale: Vec2) {
         self.screen_scale = scale;
     }
 
     pub fn rect(&self, width: f32, height: f32, x: f32, y: f32, color: Color) {
-        let mut model = Matrix::translate(Vector3 { x, y, z: 0.0 });
-        model.scale(Vector2 {
+        let mut model = Matrix::translate(Vec3 { x, y, z: 0.0 });
+        model.scale(Vec2 {
             x: width,
             y: height,
         });
@@ -636,13 +636,13 @@ impl Renderer {
         }
     }
 
-    pub fn texture(&self, texture: &Texture, position: Vector2) {
+    pub fn texture(&self, texture: &Texture, position: Vec2) {
         Renderer::texture_scale(self, texture, position, 1.0);
     }
 
-    pub fn texture_scale(&self, texture: &Texture, position: Vector2, scale: f32) {
+    pub fn texture_scale(&self, texture: &Texture, position: Vec2, scale: f32) {
         let mut model = Matrix::translate(position.into());
-        model.scale(Vector2 {
+        model.scale(Vec2 {
             x: texture.width as f32 * scale,
             y: texture.height as f32 * scale,
         });
@@ -675,18 +675,18 @@ impl Renderer {
         }
     }
 
-    pub fn texture_rect(self, texture: &Texture, rect: Rectangle, position: Vector2) {
+    pub fn texture_rect(self, texture: &Texture, rect: Rectangle, position: Vec2) {
         Renderer::texture_rect_scale(self, texture, rect, position, 1.0);
     }
 
-    pub fn texture_rect1(&self, texture: &Texture, position: Vector2) {
+    pub fn texture_rect1(&self, texture: &Texture, position: Vec2) {
         Renderer::texture_scale(self, texture, position, 1.0);
     }
 
 
-    pub fn framebuffer_texture_scale(&self, texture: &Texture, position: Vector2, scale: Vector2) {
+    pub fn framebuffer_texture_scale(&self, texture: &Texture, position: Vec2, scale: Vec2) {
         let mut model = Matrix::translate(position.into());
-        model.scale(Vector2 {
+        model.scale(Vec2 {
             x: texture.width as f32 * scale.x,
             y: texture.height as f32 * scale.y,
         });
@@ -728,15 +728,15 @@ impl Renderer {
         self,
         texture: &Texture,
         rect: Rectangle,
-        position: Vector2,
+        position: Vec2,
         scale: f32,
     ) {
-        let mut model = Matrix::translate(Vector3 {
+        let mut model = Matrix::translate(Vec3 {
             x: position.x,
             y: position.y,
             z: 0.0,
         });
-        model.scale(Vector2 {
+        model.scale(Vec2 {
             x: rect.w * scale,
             y: rect.h * scale,
         });
@@ -760,12 +760,12 @@ impl Renderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.tbo);
         }
 
-        let min = Vector2 {
+        let min = Vec2 {
             x: (rect.x * rect.w) / texture.width as f32,
             y: (rect.y * rect.h) / texture.height as f32,
         };
 
-        let max = Vector2 {
+        let max = Vec2 {
             x: (rect.x + 1.0) * rect.w / texture.width as f32,
             y: (rect.y + 1.0) * rect.h / texture.height as f32,
         };
@@ -799,7 +799,7 @@ impl Renderer {
         };
     }
 
-    pub fn render_texture_partial(&self, texture: &PartialTexture, position: Vector2) {
+    pub fn render_texture_partial(&self, texture: &PartialTexture, position: Vec2) {
         let source = Rectangle {
             x: texture.position.x as f32,
             y: texture.position.y as f32,
@@ -835,12 +835,12 @@ impl Renderer {
         unsafe {
             gl::UseProgram(self.shader_2d);
         }
-        let mut model = Matrix::translate(Vector3 {
+        let mut model = Matrix::translate(Vec3 {
             x: dest.x,
             y: dest.y,
             z: 0.0,
         });
-        model.scale(Vector2 {
+        model.scale(Vec2 {
             x: dest.w as f32,
             y: dest.h as f32,
         });
@@ -862,12 +862,12 @@ impl Renderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.tbo);
         }
 
-        let min = Vector2 {
+        let min = Vec2 {
             x: sub_texture_data.x / texture_width as f32,
             y: sub_texture_data.y / texture_height as f32,
         };
 
-        let max = Vector2 {
+        let max = Vec2 {
             x: (sub_texture_data.x + sub_texture_data.w) / texture_width as f32,
             y: (sub_texture_data.y + sub_texture_data.h) / texture_height as f32,
         };

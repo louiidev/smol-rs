@@ -42,18 +42,18 @@ pub struct Tile {
     // ONLY USED FOR PATH FINDING
     pub g: i32,
     pub f: i32,
-    pub previous: Option<Vector2Int>
+    pub previous: Option<Vec2Int>
 }
 
 
 #[derive(Default, Debug)]
 pub struct MapChunk {
-    position: Vector2Int,
-    pub tiles: HashMap<Vector2Int, Tile>
+    position: Vec2Int,
+    pub tiles: HashMap<Vec2Int, Tile>
 }
 
 impl MapChunk {
-    pub fn generate(position: Vector2Int) -> Self {
+    pub fn generate(position: Vec2Int) -> Self {
         let mut tiles = HashMap::default();
         let mut rng = rand::thread_rng();
         for x in 0..MAX_CHUNK_SIZE {
@@ -66,7 +66,7 @@ impl MapChunk {
                 } else {
                     "dot"
                 };
-                tiles.insert(Vector2Int::new(x, y) + position, Tile {
+                tiles.insert(Vec2Int::new(x, y) + position, Tile {
                     walkable: texture_name != "tree",
                     texture_name: texture_name.into(),
                     tile_type: match texture_name {
@@ -84,12 +84,12 @@ impl MapChunk {
         }
     }
 
-    pub fn get_tiles_range_of(&self, start_tile_position: Vector2Int, range: i32) -> HashMap<Vector2Int, Tile> {
+    pub fn get_tiles_range_of(&self, start_tile_position: Vec2Int, range: i32) -> HashMap<Vec2Int, Tile> {
         let mut tiles_to_return = HashMap::new();
 
         for x in -range..range+1 {
             for y in -range..range+1 {
-                let pos = Vector2Int::new(x, y) + start_tile_position;
+                let pos = Vec2Int::new(x, y) + start_tile_position;
                 let pot_tile = self.tiles.get(&pos);
                 if let Some(tile) = pot_tile {
                     tiles_to_return.insert(pos, tile.clone());
@@ -108,17 +108,17 @@ impl MapChunk {
 
 #[derive(Default, Debug)]
 pub struct Map {
-    chunks: HashMap<Vector2Int, MapChunk>,
-    current_chunk: Vector2Int,
+    chunks: HashMap<Vec2Int, MapChunk>,
+    current_chunk: Vec2Int,
 }
 
 impl Map {
     pub fn new() -> Self {
         let mut chunks = HashMap::new();
-        chunks.insert(Vector2Int::default(), MapChunk::generate(Vector2Int::default()));
+        chunks.insert(Vec2Int::default(), MapChunk::generate(Vec2Int::default()));
         Map {
             chunks,
-            current_chunk: Vector2Int::default()
+            current_chunk: Vec2Int::default()
         }
     }
 
@@ -127,24 +127,24 @@ impl Map {
         self.try_get_chunk(&pos).unwrap()
     }
 
-    pub fn try_get_chunk(&self, position: &Vector2Int) -> Option<&MapChunk> {
+    pub fn try_get_chunk(&self, position: &Vec2Int) -> Option<&MapChunk> {
         self.chunks.get(position)
     }
 
-    pub fn try_get_mut_chunk(&mut self, position: &Vector2Int) -> Option<&mut MapChunk> {
+    pub fn try_get_mut_chunk(&mut self, position: &Vec2Int) -> Option<&mut MapChunk> {
         self.chunks.get_mut(position)
     }
 
-    pub fn add_new_chunk(&mut self, position: Vector2Int) {
+    pub fn add_new_chunk(&mut self, position: Vec2Int) {
         self.chunks.insert(position, MapChunk::generate(position));
     }
 
-    pub fn get_mut_chunk_from_position(&mut self, position: Vector2Int) -> &mut MapChunk {
+    pub fn get_mut_chunk_from_position(&mut self, position: Vec2Int) -> &mut MapChunk {
 
-        let Vector2Int { x, y } = position;
+        let Vec2Int { x, y } = position;
 
         let chunk_pos = {
-            let mut pos = Vector2Int::default();
+            let mut pos = Vec2Int::default();
             if x != 0 {
                 pos.x = x / MAX_CHUNK_SIZE;
             }
@@ -157,12 +157,12 @@ impl Map {
         self.try_get_mut_chunk(&chunk_pos).unwrap()
     }
 
-    pub fn get_chunk_from_position(&self, position: Vector2Int) -> &MapChunk {
+    pub fn get_chunk_from_position(&self, position: Vec2Int) -> &MapChunk {
 
-        let Vector2Int { x, y } = position;
+        let Vec2Int { x, y } = position;
 
         let chunk_pos = {
-            let mut pos = Vector2Int::default();
+            let mut pos = Vec2Int::default();
             if x != 0 {
                 pos.x = x / MAX_CHUNK_SIZE;
             }
@@ -177,14 +177,14 @@ impl Map {
 
     /// Gets a tile from the world map regardless on which chunk
     /// ```
-    pub fn get_tile_from_grid_position(&self, position: Vector2Int) -> Option<&Tile> {
+    pub fn get_tile_from_grid_position(&self, position: Vec2Int) -> Option<&Tile> {
         let chunk = self.get_chunk_from_position(position);
 
         chunk.tiles.get(&position)
     }
 
 
-    pub fn is_tile_walkable(&self, position: Vector2Int) -> bool {
+    pub fn is_tile_walkable(&self, position: Vec2Int) -> bool {
         if let Some(tile) = self.get_tile_from_grid_position(position) {
             return tile.walkable
         }
@@ -201,7 +201,7 @@ impl Map {
         }).map(|(e, _)| e).collect()
     }
 
-    pub fn get_all_entities_in_chunk(&mut self, world: &mut World, chunk_pos: Vector2Int) -> Vec<Entity> {
+    pub fn get_all_entities_in_chunk(&mut self, world: &mut World, chunk_pos: Vec2Int) -> Vec<Entity> {
         let target_chunk_pos = self.get_chunk_from_position(chunk_pos).position;
 
         world.query::<&Transform>().iter().filter(|(_, t)| {
@@ -213,7 +213,7 @@ impl Map {
 
 
 fn _example() {
-    let mut current_chunk_pos = Vector2Int::default();
+    let mut current_chunk_pos = Vec2Int::default();
     let mut map = Map::default();
     map.add_new_chunk(current_chunk_pos.clone());
 
@@ -231,43 +231,43 @@ fn _example() {
 
 #[cfg(test)]
 mod test {
-    use crate::{math::Vector2Int};
+    use crate::{math::Vec2Int};
     use hecs::World;
     use super::*;
 
     #[test]
     fn test_get_chunk_pos() {
         let mut map = get_map();
-        let try_pos = Vector2Int::new(30, 30);
+        let try_pos = Vec2Int::new(30, 30);
         let chunk_pos = map.get_chunk_from_position(try_pos).position;
-        assert_eq!(Vector2Int::new(0, 0), chunk_pos);        
+        assert_eq!(Vec2Int::new(0, 0), chunk_pos);        
     }
 
     #[test]
     fn large_chunk_get() {
         let mut map = get_map();
-        map.add_new_chunk(Vector2Int::new(101, 404));
-        let try_pos = Vector2Int::new(101 * MAX_CHUNK_SIZE, 404 * MAX_CHUNK_SIZE);
+        map.add_new_chunk(Vec2Int::new(101, 404));
+        let try_pos = Vec2Int::new(101 * MAX_CHUNK_SIZE, 404 * MAX_CHUNK_SIZE);
         let chunk_pos = map.get_chunk_from_position(try_pos).position;
-        assert_eq!(Vector2Int::new(101, 404), chunk_pos);
+        assert_eq!(Vec2Int::new(101, 404), chunk_pos);
     }
 
     #[test]
     fn div_by_zero() {
         let mut map = get_map();
 
-        let try_pos = Vector2Int::new(0, 30);
+        let try_pos = Vec2Int::new(0, 30);
         let chunk_pos = map.get_chunk_from_position(try_pos).position;
-        assert_eq!(Vector2Int::new(0, 0), chunk_pos);
+        assert_eq!(Vec2Int::new(0, 0), chunk_pos);
     }
 
     #[test]
     fn test_entitie_chunk_query() {
         let mut world = World::new();
         let mut map = get_map();
-        map.add_new_chunk(Vector2Int::new(1, 1));
+        map.add_new_chunk(Vec2Int::new(1, 1));
         world.spawn((Transform {
-            grid_position: Vector2Int {
+            grid_position: Vec2Int {
                 x: MAX_CHUNK_SIZE + 1,
                 y: MAX_CHUNK_SIZE + 1
             },
@@ -275,7 +275,7 @@ mod test {
         }, true));
 
         let a = world.spawn((Transform {
-            grid_position: Vector2Int {
+            grid_position: Vec2Int {
                 x: MAX_CHUNK_SIZE,
                 y: MAX_CHUNK_SIZE
             },
@@ -283,7 +283,7 @@ mod test {
         }, true));
 
         world.spawn((Transform {
-            grid_position: Vector2Int {
+            grid_position: Vec2Int {
                 x: MAX_CHUNK_SIZE - 1,
                 y: MAX_CHUNK_SIZE - 1
             },
@@ -293,7 +293,7 @@ mod test {
         assert_eq!(map.get_all_other_entities_in_chunk(&mut world, a).len(), 1);
 
 
-        assert_eq!(map.get_all_entities_in_chunk(&mut world, Vector2Int {
+        assert_eq!(map.get_all_entities_in_chunk(&mut world, Vec2Int {
             x: MAX_CHUNK_SIZE - 1,
             y: MAX_CHUNK_SIZE - 1
         }).len(), 1);
@@ -301,9 +301,9 @@ mod test {
 
     #[test]
     fn test_get_tiles_range_of() {
-        let chunk = MapChunk::generate(Vector2Int::default());
+        let chunk = MapChunk::generate(Vec2Int::default());
 
-        let range_tiles = chunk.get_tiles_range_of(Vector2Int::new(5, 5), 2);
+        let range_tiles = chunk.get_tiles_range_of(Vec2Int::new(5, 5), 2);
 
         assert_eq!(range_tiles.len(), 25);
     }

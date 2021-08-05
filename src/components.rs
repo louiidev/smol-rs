@@ -4,7 +4,7 @@ use hashbrown::HashMap;
 use hecs::{Entity, EntityRef, World};
 use rand::Rng;
 
-use crate::{events::{DamageAction, Events, Action }, math::{Vector2Int, Vector2}, render::Color};
+use crate::{events::{DamageAction, Events, Action }, math::{Vec2Int, Vec2}, render::Color};
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Invulnerable;
@@ -54,9 +54,9 @@ pub struct PlayerController;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Transform {
-    pub screen_positon: Vector2,
-    pub grid_position: Vector2Int,
-    pub scale: Vector2,
+    pub screen_positon: Vec2,
+    pub grid_position: Vec2Int,
+    pub scale: Vec2,
 }
 
 impl Transform {
@@ -64,22 +64,22 @@ impl Transform {
 
     }
 
-    pub fn move_pos(&mut self, grid_position: Vector2Int) {
+    pub fn move_pos(&mut self, grid_position: Vec2Int) {
         self.grid_position = grid_position;
-        let grid_pos: Vector2 = grid_position.into();
-        self.screen_positon = Vector2::new(grid_pos.x * 16., grid_pos.y * 16.);
+        let grid_pos: Vec2 = grid_position.into();
+        self.screen_positon = Vec2::new(grid_pos.x * 16., grid_pos.y * 16.);
     }
 
-    pub fn move_direction(&mut self, grid_direction: Vector2Int) {
+    pub fn move_direction(&mut self, grid_direction: Vec2Int) {
         self.grid_position+= grid_direction;
-        let grid_pos: Vector2 = grid_direction.into();
-        self.screen_positon+= Vector2::new(grid_pos.x * 16., grid_pos.y * 16.);
+        let grid_pos: Vec2 = grid_direction.into();
+        self.screen_positon+= Vec2::new(grid_pos.x * 16., grid_pos.y * 16.);
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpriteRenderer {
-    pub scale: Vector2,
+    pub scale: Vec2,
     pub name: String,
     pub color: Color
 }
@@ -87,7 +87,7 @@ pub struct SpriteRenderer {
 impl Default for SpriteRenderer {
     fn default() -> Self {
         SpriteRenderer {
-            scale: Vector2 { x: 1., y: 1.},
+            scale: Vec2 { x: 1., y: 1.},
             color: Color(255, 255, 255, 1.),
             name: "".to_string(),
         }
@@ -128,14 +128,14 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn get_action(&mut self, grid_pos: Vector2Int) -> Action {
+    pub fn get_action(&mut self, grid_pos: Vec2Int) -> Action {
         let x = rand::thread_rng().gen_range(-1..2);
         let y = rand::thread_rng().gen_range(-1..2);
 
         let mut event = Events::Empty;
 
         if x != 0 || y != 0 {
-            event = Events::MoveTo(Vector2Int::new(x, y) + grid_pos);
+            event = Events::MoveTo(Vec2Int::new(x, y) + grid_pos);
         }
 
         Action {
@@ -348,7 +348,7 @@ impl Goal for B {
 
 #[cfg(test)]
 mod test {
-    use crate::{components::Transform, events::Events, math::Vector2Int, world_setup::setup_world};
+    use crate::{components::Transform, events::Events, math::Vec2Int, world_setup::setup_world};
 
     use super::*;
 

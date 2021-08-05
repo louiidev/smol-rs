@@ -1,4 +1,4 @@
-use crate::{components::{Actor, Captured, Item, PlayerController, Relationship, Relationships}, logging::{log_new_message}, map::get_map, math::{Vector2, Vector2Int}, pathfinding::a_star, queries::get_entity_grid_position, render::{Color, WHITE}, systems::create_bad_relationship};
+use crate::{components::{Actor, Captured, Item, PlayerController, Relationship, Relationships}, logging::{log_new_message}, map::get_map, math::{Vec2, Vec2Int}, pathfinding::a_star, queries::get_entity_grid_position, render::{Color, WHITE}, systems::create_bad_relationship};
 use hecs::{ Entity, World };
 use crate::components::{Invulnerable, Physics, Transform};
 
@@ -31,8 +31,8 @@ pub struct ThrowAction {
 #[derive(Debug, Clone)]
 pub enum Events {
     TakeDamage(DamageAction),
-    MoveTo(Vector2Int),
-    MoveDirection(Vector2Int),
+    MoveTo(Vec2Int),
+    MoveDirection(Vec2Int),
     Attack(AttackAction),
     ThrowItem(ThrowAction),
     Empty,
@@ -50,7 +50,7 @@ fn event_take_damage(world: &mut World, ent: Entity, action: &mut DamageAction) 
     if let Ok(mut comp) = world.get_mut::<Physics>(ent) { comp.take_damage(action); }
 }
 
-fn event_move_to(world: &mut World, ent: Entity, mut action: Vector2Int) {
+fn event_move_to(world: &mut World, ent: Entity, mut action: Vec2Int) {
     if let Ok(mut transform) = world.get_mut::<Transform>(ent) {
         if !get_map().is_tile_walkable(action) {
             action = transform.grid_position;
@@ -63,7 +63,7 @@ fn event_move_to(world: &mut World, ent: Entity, mut action: Vector2Int) {
     }
 }
 
-fn event_move_direction(world: &mut World, ent: Entity, action: &mut Vector2Int) {
+fn event_move_direction(world: &mut World, ent: Entity, action: &mut Vec2Int) {
     if let Ok(mut comp) = world.get_mut::<Transform>(ent) {
         comp.move_direction(*action);
     }
@@ -78,9 +78,9 @@ fn event_throw_item(world: &mut World, ent: Entity, action: &mut ThrowAction) {
 
 
 fn find_entities_in_distance(world: &mut World, ent: Entity, max_distance: f32) -> Vec<Entity> {
-    let position: Vector2 = get_entity_grid_position(world, ent).into();
+    let position: Vec2 = get_entity_grid_position(world, ent).into();
     world.query::<&Transform>().iter().filter(|(_, t)| {
-        let pos: Vector2 = t.grid_position.into();
+        let pos: Vec2 = t.grid_position.into();
         pos.distance(position) <= max_distance
     }).map(|(e, _)| e).collect()
 }

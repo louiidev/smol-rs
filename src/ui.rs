@@ -3,10 +3,15 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 
-
+pub mod sidebar;
 pub mod window;
 
-use crate::{components::{Inventory, Item}, core::get_text_bounds, text_render::TextAlignment};
+use crate::{
+    components::{Inventory, Item},
+    core::get_text_bounds,
+    input::{set_captured_mousepress, InputTransition},
+    text_render::TextAlignment,
+};
 use glyph_brush::ab_glyph::Rect;
 use hecs::{Entity, World};
 
@@ -21,7 +26,7 @@ use crate::{
     input::{self, get_mouse_pos, is_key_down, is_mouse_down, screen_to_grid, InputState},
     logging::get_log,
     map::get_map,
-    math::{Rectangle, Vector2, Vector2Int},
+    math::{Rectangle, Vec2, Vec2Int},
     pathfinding::a_star,
     queries::{get_entity_at_grid_position, get_entity_grid_position},
     render::{Color, BLUE, RED},
@@ -43,7 +48,7 @@ pub enum UiElements {
 }
 
 // pub struct UiState {
-//     pub context_position: Option<Vector2>,
+//     pub context_position: Option<Vec2>,
 //     pub focus_id: Option<String>
 // }
 
@@ -86,7 +91,7 @@ impl Default for ContextMenuAction {
 pub struct ContextMenu {
     focused_index: Option<usize>,
     items: Vec<ContextItem>,
-    position: Option<Vector2>,
+    position: Option<Vec2>,
 }
 
 impl ContextMenu {
@@ -118,30 +123,19 @@ impl ContextMenu {
 
         let mut remake_items = false;
 
-        if let Some(ui_event) = input_state.ui_event {
-            match ui_event {
-                UiEvent::MouseButtonDown(btn) => {
-                    match btn {
-                        MouseButton::Left => {
-                            if self.position.is_some() {
-                                self.position = None;
-                                input_state.ui_event = None;
-                            }
-                            
-                        },
-                        MouseButton::Right => {
-                            let pos = get_mouse_pos();
-                            self.position = Some(pos.into());
-                            remake_items = true;
-                            input_state.ui_event = None;
-                        },
-                        _ => {},
-                    }
-                    input_state.context_menu_position = self.position;
-                    
-                },
-                _ => {}
+        if is_mouse_down(MouseButton::Left) {
+            println!("FIRES");
+            if self.position.is_some() {
+                self.position = None;
+                set_captured_mousepress((InputTransition::Down, MouseButton::Left));
+                input_state.context_menu_position = None;
             }
+        } else if is_mouse_down(MouseButton::Right) {
+            let pos = get_mouse_pos();
+            self.position = Some(pos.into());
+            input_state.context_menu_position = Some(pos.into());
+            remake_items = true;
+            set_captured_mousepress((InputTransition::Down, MouseButton::Left))
         }
 
         if remake_items {
@@ -186,9 +180,9 @@ impl ContextMenu {
             let tooltip_pos = {
                 if i as i32 - 1 >= 0 && bounds.get(i - 1).is_some() {
                     let bounds = bounds.get(i - 1).unwrap();
-                    Vector2::new(position.x + padding, bounds.max.y)
+                    Vec2::new(position.x + padding, bounds.max.y)
                 } else {
-                    Vector2::new(position.x + padding, position.y)
+                    Vec2::new(position.x + padding, position.y)
                 }
             };
 
@@ -230,7 +224,7 @@ impl ContextMenu {
 }
 
 pub fn rect_border(mut rect: Rectangle, thickness: f32, color: Color) {
-    rect.add_padding(Vector2::new(thickness, thickness));
+    rect.add_padding(Vec2::new(thickness, thickness));
 
     render_rect(rect.x, rect.y, rect.w, rect.h, color);
 }
@@ -260,20 +254,11 @@ pub fn line_border(rect: Rectangle, thickness: f32, color: Color) {
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
-    ItemPressed(usize)
+    ItemPressed(usize),
 }
-
-#[derive(Debug, Clone, Copy)]
-pub enum UiEvent {
-    MouseButtonDown(MouseButton),
-    MouseMove,
-    EventHandled,
-}
-
-
 
 pub struct ButtonState {
-    is_pressed: bool
+    is_pressed: bool,
 }
 
 pub struct Button<'a> {
@@ -311,11 +296,11 @@ impl LogInfoBox {
             &log_items[0..log_items.len()]
         };
 
-        let window_size: Vector2 = get_window_size().into();
+        let window_size: Vec2 = get_window_size().into();
         let height = 200.;
         let width = window_size.x - 310.;
 
-        let start_position = Vector2::new(10., window_size.y - 40.);
+        let start_position = Vec2::new(10., window_size.y - 40.);
         start_scissor(0, (0) as _, width as _, height as _);
 
         render_rect(
@@ -336,7 +321,7 @@ impl LogInfoBox {
         let mut last_bounds: Option<Rect> = None;
         for item in items {
             let position = if let Some(bounds) = last_bounds {
-                Vector2::new(start_position.x, bounds.min.y - bounds.height())
+                Vec2::new(start_position.x, bounds.min.y - bounds.height())
             } else {
                 start_position
             };
@@ -349,33 +334,6 @@ impl LogInfoBox {
         line_border(rect, 5.0, Color(255, 255, 255, 1.));
 
         end_scissor();
-    }
-}
-
-pub struct SideBar {}
-
-impl SideBar {
-    pub fn render(&self) {
-        let window_size: Vector2 = get_window_size().into();
-        let height = window_size.y;
-        let width = 300.;
-
-        render_rect(
-            window_size.x - width,
-            0.,
-            width,
-            height,
-            Color(28, 33, 43, 1.),
-        );
-
-        let rect = Rectangle {
-            x: window_size.x - width,
-            y: 0.,
-            w: width,
-            h: height,
-        };
-
-        line_border(rect, 5.0, Color(255, 255, 255, 1.));
     }
 }
 
@@ -414,7 +372,6 @@ impl ItemsWindow {
             self.items = Vec::default();
         }
 
-
         // Focus item logic
         if self.should_render && !self.items.is_empty() {
             let mouse_pos = get_mouse_pos();
@@ -426,7 +383,7 @@ impl ItemsWindow {
                 } else {
                     10.
                 };
-                let bounds = get_text_bounds(item.name(), Vector2::new(0., y_pos), 14.).unwrap();
+                let bounds = get_text_bounds(item.name(), Vec2::new(0., y_pos), 14.).unwrap();
                 let Rectangle { x, y, .. } = self.dimensions;
                 let rect = Rectangle {
                     x: bounds.min.x + x,
@@ -441,9 +398,7 @@ impl ItemsWindow {
 
                 last_bounds = Some(bounds);
             }
-
         }
-
     }
 
     pub fn render(&self) {
@@ -460,7 +415,7 @@ impl ItemsWindow {
         queue_text_ex(
             "Items",
             TextQueueConfig {
-                position: Vector2::new(x + w / 2., y - 30.),
+                position: Vec2::new(x + w / 2., y - 30.),
                 font_size: 14.,
                 color: Color(1, 1, 1, 1.),
                 horizontal_alginment: TextAlignment::Center,
@@ -472,7 +427,7 @@ impl ItemsWindow {
         start_scissor(x as _, scissor_y as _, w as _, h as _);
         clear(Color(28, 33, 43, 1.));
 
-        set_offset(Vector2 { x, y });
+        set_offset(Vec2 { x, y });
 
         let mut last_bounds: Option<Rect> = None;
         let mut inventory_height = 0.;
@@ -486,7 +441,7 @@ impl ItemsWindow {
 
             last_bounds = queue_text(
                 item.name(),
-                Vector2::new(10., y_pos),
+                Vec2::new(10., y_pos),
                 14.,
                 Color(255, 255, 255, 1.),
             );
@@ -497,10 +452,15 @@ impl ItemsWindow {
 
             if let Some(focus_index) = self.focus_index {
                 if focus_index == index {
-                    render_rect(0., y_pos, w, last_bounds.unwrap().height(), Color(200, 100, 100, 1.));
+                    render_rect(
+                        0.,
+                        y_pos,
+                        w,
+                        last_bounds.unwrap().height(),
+                        Color(200, 100, 100, 1.),
+                    );
                 }
             }
-
         }
 
         render_text_queue();
