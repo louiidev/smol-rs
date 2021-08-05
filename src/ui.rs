@@ -29,7 +29,7 @@ use crate::{
     math::{Rectangle, Vec2, Vec2Int},
     pathfinding::a_star,
     queries::{get_entity_at_grid_position, get_entity_grid_position},
-    render::{Color, BLUE, RED},
+    render::Color,
     text_render::TextQueueConfig,
 };
 

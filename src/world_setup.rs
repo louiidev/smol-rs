@@ -3,7 +3,6 @@ use crate::math::*;
 use hecs::Entity;
 use hecs::World;
 
-
 pub type WorldPlayer = (World, Entity);
 
 pub fn setup_world() -> WorldPlayer {
@@ -23,7 +22,11 @@ pub fn setup_world() -> WorldPlayer {
         },
         PlayerController,
         Inventory {
-            items: vec![Box::new(HealthPotion::default()), Box::new(HealthPotion::default()), Box::new(HealthPotion::default())]
+            items: vec![
+                Box::new(HealthPotion::default()),
+                Box::new(HealthPotion::default()),
+                Box::new(HealthPotion::default()),
+            ],
         },
     ));
 
@@ -38,9 +41,8 @@ pub fn setup_world() -> WorldPlayer {
         SpriteRenderer {
             name: "minicoo".to_string(),
             ..Default::default()
-        }
+        },
     ));
-    
-    
+
     (world, player)
 }

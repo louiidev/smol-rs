@@ -88,25 +88,20 @@ impl Texture {
 
         let (width, height, img_data, internal_format, format) =
             match image::load_from_memory(bytes).expect("Could not load image at src: {}") {
-                DynamicImage::ImageRgba8(_image) => {
-                    (
-                        _image.width() as i32,
-                        _image.height() as i32,
-                        _image.into_raw(),
-                        gl::RGBA8,
-                        gl::RGBA,
-                    )
-                }
-                DynamicImage::ImageRgb8(_image) => {
-                    
-                    (
-                        _image.width() as i32,
-                        _image.height() as i32,
-                        _image.into_raw(),
-                        gl::RGB8,
-                        gl::RGB,
-                    )
-                }
+                DynamicImage::ImageRgba8(_image) => (
+                    _image.width() as i32,
+                    _image.height() as i32,
+                    _image.into_raw(),
+                    gl::RGBA8,
+                    gl::RGBA,
+                ),
+                DynamicImage::ImageRgb8(_image) => (
+                    _image.width() as i32,
+                    _image.height() as i32,
+                    _image.into_raw(),
+                    gl::RGB8,
+                    gl::RGB,
+                ),
                 img => {
                     let _image = img.to_rgba8();
                     (
@@ -342,15 +337,20 @@ pub struct Color(pub u8, pub u8, pub u8, pub f32);
 
 impl Color {
     pub fn into_gl(&self) -> (f32, f32, f32, f32) {
-        (self.0 as f32 / 255., self.1 as f32 / 255., self.2 as f32 / 255., self.3)
+        (
+            self.0 as f32 / 255.,
+            self.1 as f32 / 255.,
+            self.2 as f32 / 255.,
+            self.3,
+        )
     }
-}
 
-pub(crate) const WHITE: Color = Color(255, 255, 255, 1.);
-pub(crate) const BLUE: Color = Color(10, 10, 255, 1.);
-pub(crate) const RED: Color = Color(255, 10, 10, 1.);
-pub(crate) const GREEN: Color = Color(10, 255, 10, 1.);
-pub(crate) const BLACK: Color = Color(1, 1, 1, 1.);
+    pub(crate) const WHITE: Color = Color(255, 255, 255, 1.);
+    pub(crate) const BLUE: Color = Color(10, 10, 255, 1.);
+    pub(crate) const RED: Color = Color(255, 10, 10, 1.);
+    pub(crate) const GREEN: Color = Color(10, 255, 10, 1.);
+    pub(crate) const BLACK: Color = Color(1, 1, 1, 1.);
+}
 
 pub fn get_uniform_location(shader: u32, name: &str) -> i32 {
     let c_str_name = CString::new(name).unwrap();
@@ -534,16 +534,14 @@ impl Renderer {
                 id: white_tex_id,
             },
             screen_scale: Vec2::new(1., 1.),
-            frame_buffer: FrameBuffer::new(w, h)
+            frame_buffer: FrameBuffer::new(w, h),
         }
     }
 
     pub fn clear(color: Color) {
         let (r, g, b, a) = color.into_gl();
         unsafe {
-            gl::ClearColor(
-               r, g, b, a 
-            );
+            gl::ClearColor(r, g, b, a);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
     }
@@ -556,7 +554,6 @@ impl Renderer {
     }
 
     pub fn set_projection(&self, width: f32, height: f32) {
-        
         unsafe {
             gl::UseProgram(self.shader_2d);
             let proj: [f32; 16] = Matrix::ortho(0.0, width, height, 0.0, -100.0, 100.0).into();
@@ -573,7 +570,11 @@ impl Renderer {
     pub fn set_offset(&self, offset: Vec2) {
         unsafe {
             gl::UseProgram(self.shader_2d);
-            let view = Matrix::translate(Vec3 { x: offset.x, y: offset.y, z: 0.0 });
+            let view = Matrix::translate(Vec3 {
+                x: offset.x,
+                y: offset.y,
+                z: 0.0,
+            });
 
             let float_view: [f32; 16] = view.into();
             gl::UniformMatrix4fv(
@@ -589,7 +590,11 @@ impl Renderer {
     pub fn reset_offset(&self) {
         unsafe {
             gl::UseProgram(self.shader_2d);
-            let view = Matrix::translate(Vec3 { x: 0.0, y: 0.0, z: 0.0 });
+            let view = Matrix::translate(Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            });
 
             let float_view: [f32; 16] = view.into();
             gl::UniformMatrix4fv(
@@ -622,10 +627,7 @@ impl Renderer {
                 float_model.as_ptr(),
             );
             let (r, g, b, a) = color.into_gl();
-            gl::Uniform4f(
-                get_uniform_location(self.shader_2d, "u_color"),
-                r, g, b, a
-            );
+            gl::Uniform4f(get_uniform_location(self.shader_2d, "u_color"), r, g, b, a);
 
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindTexture(gl::TEXTURE_2D, self.default_texture.id);
@@ -682,7 +684,6 @@ impl Renderer {
     pub fn texture_rect1(&self, texture: &Texture, position: Vec2) {
         Renderer::texture_scale(self, texture, position, 1.0);
     }
-
 
     pub fn framebuffer_texture_scale(&self, texture: &Texture, position: Vec2, scale: Vec2) {
         let mut model = Matrix::translate(position.into());
@@ -912,10 +913,7 @@ impl Renderer {
             gl::Disable(gl::SCISSOR_TEST);
         }
     }
-    
-
 }
-
 
 impl Drop for Renderer {
     fn drop(&mut self) {

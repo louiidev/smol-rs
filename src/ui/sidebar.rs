@@ -7,7 +7,7 @@ use crate::{
         set_offset,
     },
     math::{Rectangle, Vec2},
-    render::{Color, GREEN, RED, WHITE},
+    render::Color,
     text_render::{TextAlignment, TextQueueConfig},
 };
 
@@ -26,19 +26,19 @@ impl SideBar {
         render_rect(0., 0., width, height, Color(28, 33, 43, 1.));
         let healthbar_width = width - 20.;
         let physics = world.get::<Physics>(player).unwrap();
-        render_rect(10., 10., healthbar_width, 30., RED);
+        render_rect(10., 10., healthbar_width, 30., Color::RED);
         render_rect(
             10.,
             10.,
             healthbar_width * (physics.health as f32 / physics.max_health as f32),
             30.,
-            GREEN,
+            Color::GREEN,
         );
         queue_text_ex(
             &format!("{}/{}", &physics.health, &physics.max_health),
             TextQueueConfig {
                 position: Vec2::new(healthbar_width / 2. + 10., 10.),
-                color: WHITE,
+                color: Color::WHITE,
                 font_size: 14.,
                 horizontal_alginment: TextAlignment::Center,
             },

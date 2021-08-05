@@ -1,50 +1,48 @@
-pub mod render;
-pub mod math;
-pub mod events;
-pub mod components;
-pub mod input;
-pub mod texture_packer;
-pub mod render_batch;
-pub mod systems;
 pub mod ai;
-pub mod world_setup;
-pub mod map;
-pub mod text_render;
-pub mod ui;
-pub mod collision;
 pub mod camera;
+pub mod collision;
+pub mod components;
+pub mod events;
+pub mod input;
+pub mod logging;
+pub mod map;
+pub mod math;
 pub mod pathfinding;
 pub mod queries;
-pub mod logging;
+pub mod render;
+pub mod render_batch;
+pub mod systems;
+pub mod text_render;
+pub mod texture_packer;
+pub mod ui;
+pub mod world_setup;
 
-use std::time::Instant;
 use crate::input::Input;
+use std::time::Instant;
 
 #[derive(Debug)]
 pub struct TimeStep {
-    last_time:   Instant,
-    delta_time:  f64,
+    last_time: Instant,
+    delta_time: f64,
     frame_count: u32,
-    frame_time:  f64,
+    frame_time: f64,
     last_frame_count: u32,
 }
 
 impl TimeStep {
     pub fn new() -> TimeStep {
         TimeStep {
-            last_time:   Instant::now(),
-            delta_time:  0.0,
+            last_time: Instant::now(),
+            delta_time: 0.0,
             frame_count: 0,
-            frame_time:  0.0,
+            frame_time: 0.0,
             last_frame_count: 0,
         }
     }
 
     pub fn delta(&mut self) -> f64 {
         let current_time = Instant::now();
-        let delta = current_time.duration_since(self.last_time).as_micros()
-            as f64
-            * 0.001;
+        let delta = current_time.duration_since(self.last_time).as_micros() as f64 * 0.001;
         self.last_time = current_time;
         self.delta_time = delta;
         delta
@@ -69,23 +67,23 @@ impl TimeStep {
 
 pub mod core {
     use super::*;
-    use glyph_brush::ab_glyph::Rect;
-    use lazy_static::lazy_static;
-    use spin_sleep::LoopHelper;
     use crate::camera::Camera;
-    use crate::render::*;
     use crate::math::*;
     use crate::render::Color;
+    use crate::render::*;
     use crate::text_render::TextQueueConfig;
     use crate::text_render::TextRenderer;
+    use glyph_brush::ab_glyph::Rect;
+    use lazy_static::lazy_static;
+    use sdl2::event::Event;
+    use sdl2::event::WindowEvent;
+    use sdl2::video::GLContext;
+    use sdl2::video::GLProfile;
     use sdl2::video::SwapInterval;
     use sdl2::video::Window;
     use sdl2::EventPump;
-    use sdl2::event::Event;
-    use sdl2::video::GLContext;
-    use sdl2::video::GLProfile;
+    use spin_sleep::LoopHelper;
     use std::sync::Mutex;
-    use sdl2::event::WindowEvent;
 
     pub type Keycode = sdl2::keyboard::Keycode;
     pub type MouseButton = sdl2::mouse::MouseButton;
@@ -97,41 +95,36 @@ pub mod core {
     pub const BASE_RES_W: f32 = RENDER_RES_W as f32 * RENDER_SCALE;
     pub const BASE_RES_H: f32 = RENDER_RES_H as f32 * RENDER_SCALE;
 
-
     pub fn get_window_scale() -> Vec2 {
         let ctx = get_context();
 
         Vec2 {
             x: ctx.window_size.x as f32 / RENDER_RES_W as f32,
-            y: ctx.window_size.y as f32 / RENDER_RES_H as f32
+            y: ctx.window_size.y as f32 / RENDER_RES_H as f32,
         }
     }
 
-    
     pub fn get_window_scale_clamped() -> f32 {
-        let pixel_size = Vec2 { x: RENDER_RES_W as f32, y: RENDER_RES_H as f32 };
+        let pixel_size = Vec2 {
+            x: RENDER_RES_W as f32,
+            y: RENDER_RES_H as f32,
+        };
         let window_size: Vec2 = get_context().window_size.into();
         let value = (window_size / pixel_size).x;
         clamp(2., 5., value)
     }
- 
-
-    
 
     lazy_static! {
-        static ref RENDER_CONTEXT: Mutex<Renderer> = {
-            Mutex::new(Renderer::default(BASE_RES_W as _, BASE_RES_H as _))
-        };
+        static ref RENDER_CONTEXT: Mutex<Renderer> =
+            Mutex::new(Renderer::default(BASE_RES_W as _, BASE_RES_H as _));
     }
 
     lazy_static! {
-        static ref TEXT_RENDER_CONTEXT: Mutex<TextRenderer> = {
-            Mutex::new(TextRenderer::new(BASE_RES_W as _, BASE_RES_H as _))
-        };
+        static ref TEXT_RENDER_CONTEXT: Mutex<TextRenderer> =
+            Mutex::new(TextRenderer::new(BASE_RES_W as _, BASE_RES_H as _));
     }
 
     pub static mut CONTEXT: Option<Smol> = None;
-
 
     pub fn get_context() -> &'static mut Smol {
         unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
@@ -146,11 +139,14 @@ pub mod core {
     }
 
     pub fn get_text_bounds(text: &str, position: Vec2, font_size: f32) -> Option<Rect> {
-        get_text_render_context().get_text_bounds(text, TextQueueConfig {
-            position,
-            font_size,
-            ..Default::default()
-        })
+        get_text_render_context().get_text_bounds(
+            text,
+            TextQueueConfig {
+                position,
+                font_size,
+                ..Default::default()
+            },
+        )
     }
 
     pub fn get_text_bounds_ex(text: &str, text_config: TextQueueConfig) -> Option<Rect> {
@@ -158,19 +154,26 @@ pub mod core {
     }
 
     pub fn queue_text(text: &str, position: Vec2, font_size: f32, color: Color) -> Option<Rect> {
-        queue_text_ex(text, TextQueueConfig {
-            position,
-            font_size,
-            color,
-            ..Default::default()
-        })
+        queue_text_ex(
+            text,
+            TextQueueConfig {
+                position,
+                font_size,
+                color,
+                ..Default::default()
+            },
+        )
     }
 
     pub fn queue_text_ex(text: &str, text_config: TextQueueConfig) -> Option<Rect> {
         get_text_render_context().queue_text_ex(text, text_config)
     }
 
-    pub fn queue_multiple_text(text: Vec<(String, Color)>, position: Vec2, font_size: f32) -> Option<Rect> {
+    pub fn queue_multiple_text(
+        text: Vec<(String, Color)>,
+        position: Vec2,
+        font_size: f32,
+    ) -> Option<Rect> {
         get_text_render_context().queue_multiple(text, position, font_size)
     }
 
@@ -192,9 +195,7 @@ pub mod core {
     }
 
     pub fn render_rect(x: f32, y: f32, width: f32, height: f32, color: Color) {
-        get_render_context().rect(
-           width, height, x, y, color
-        );
+        get_render_context().rect(width, height, x, y, color);
     }
 
     pub fn load_texture(src: &str) -> Texture {
@@ -213,7 +214,6 @@ pub mod core {
         get_render_context().texture_scale(texture, position, scale);
     }
 
-    
     pub fn render_texture_partial(texture: &PartialTexture, position: Vec2) {
         get_render_context().render_texture_partial(&texture, position);
     }
@@ -241,15 +241,13 @@ pub mod core {
     pub fn render_framebuffer(position: Vec2, scale: f32) {
         let render_context = get_render_context();
         let texture = &render_context.frame_buffer.texture;
-        
+
         render_context.texture_scale(texture, position, scale);
     }
-
 
     pub fn get_window_size() -> Vec2Int {
         get_context().window_size
     }
-
 
     pub fn get_screen_center() -> Vec2Int {
         let ctx = get_context();
@@ -268,7 +266,7 @@ pub mod core {
         get_render_context().set_offset(offset);
         get_text_render_context().text_pipe.set_offset(offset);
     }
-    
+
     pub fn reset_offset() {
         get_render_context().reset_offset();
         get_text_render_context().text_pipe.reset_offset();
@@ -281,23 +279,22 @@ pub mod core {
         ctx.window.gl_swap_window();
         for event in ctx.event_pump.poll_iter() {
             match event {
-                Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                    ctx.running = false;
-                },
-                Event::Window {
-                    win_event,
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
                     ..
                 } => {
-                    match win_event {
-                        WindowEvent::Resized(w, h) => {
-                            get_render_context().set_viewport(0.0, 0.0, w as u32, h as u32);
-                            get_render_context().set_projection(w as f32, h as f32);
-                            get_text_render_context().on_resize_window(Vec2Int { x: w, y: h });
-                            ctx.window_size.x = w;
-                            ctx.window_size.y = h;
-                        },
-                        _ => {}
+                    ctx.running = false;
+                }
+                Event::Window { win_event, .. } => match win_event {
+                    WindowEvent::Resized(w, h) => {
+                        get_render_context().set_viewport(0.0, 0.0, w as u32, h as u32);
+                        get_render_context().set_projection(w as f32, h as f32);
+                        get_text_render_context().on_resize_window(Vec2Int { x: w, y: h });
+                        ctx.window_size.x = w;
+                        ctx.window_size.y = h;
                     }
+                    _ => {}
                 },
                 _ => {}
             }
@@ -316,62 +313,57 @@ pub mod core {
         get_context().timer_state.fps.unwrap_or(60.).round()
     }
 
-
     pub fn init() {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
-        
-        
+
         let gl_attr = video_subsystem.gl_attr();
         gl_attr.set_context_profile(GLProfile::Core);
         gl_attr.set_context_version(4, 1);
 
-        let screen_width = BASE_RES_W as i32;  
-        let screen_height = BASE_RES_H as i32; 
-        let window = video_subsystem.window("Window", screen_width as _, screen_height as _)
+        let screen_width = BASE_RES_W as i32;
+        let screen_height = BASE_RES_H as i32;
+        let window = video_subsystem
+            .window("Window", screen_width as _, screen_height as _)
             .opengl()
             .resizable()
             .build()
             .unwrap();
-    
+
         // Unlike the other example above, nobody created a context for your window, so you need to create one.
         let _gl_context = window.gl_create_context().unwrap();
         gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
         let _ = video_subsystem.gl_set_swap_interval(SwapInterval::VSync);
         debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
         let event_pump = sdl_context.event_pump().unwrap();
-       
+
         get_render_context().set_viewport(0.0, 0.0, screen_width as u32, screen_height as u32);
         get_render_context().set_projection(screen_width as f32, screen_height as f32);
         set_offset(Vec2::default());
         let loop_helper = LoopHelper::builder()
             .report_interval_s(0.5) // report every half a second
             .build_with_target_rate(60.0); // limit to 250 FPS if possible
-        
+
         unsafe {
-            CONTEXT = Option::from(
-                Smol { 
-                    running: true,
-                    window,
-                    event_pump,
-                    _gl_context,
-                    time_step: TimeStep::new(),
-                    delta_time: 1. / 60.,
-                    input: Input::new(),
-                    window_size: Vec2Int {
-                        x: screen_width as i32,
-                        y: screen_height as i32
-                    },
-                    loop_helper,
-                    timer_state: TimerState {
-                        fps: None,
-                        delta: 1. / 60.
-                    },
-                    camera: Camera {
-                        zoom: 1.0
-                    }
-                }
-            )
+            CONTEXT = Option::from(Smol {
+                running: true,
+                window,
+                event_pump,
+                _gl_context,
+                time_step: TimeStep::new(),
+                delta_time: 1. / 60.,
+                input: Input::new(),
+                window_size: Vec2Int {
+                    x: screen_width as i32,
+                    y: screen_height as i32,
+                },
+                loop_helper,
+                timer_state: TimerState {
+                    fps: None,
+                    delta: 1. / 60.,
+                },
+                camera: Camera { zoom: 1.0 },
+            })
         };
     }
 
@@ -386,13 +378,11 @@ pub mod core {
         pub window_size: Vec2Int,
         loop_helper: LoopHelper,
         timer_state: TimerState,
-        camera: Camera
+        camera: Camera,
     }
 
     pub struct TimerState {
         delta: f32,
-        fps: Option<f64>
+        fps: Option<f64>,
     }
 }
-
-

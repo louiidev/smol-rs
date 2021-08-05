@@ -1,16 +1,12 @@
 use crate::{components::Transform, math::*, queries::get_entity_grid_position};
-use std::{sync::Mutex};
 use hashbrown::HashMap;
 use hecs::{Entity, World};
 use lazy_static::lazy_static;
 use rand::Rng;
-
-
+use std::sync::Mutex;
 
 lazy_static! {
-    static ref MAP: Mutex<Map> = {
-        Mutex::new(Map::new())
-    };
+    static ref MAP: Mutex<Map> = { Mutex::new(Map::new()) };
 }
 
 pub fn get_map() -> std::sync::MutexGuard<'static, Map> {
@@ -32,7 +28,6 @@ impl Default for TileType {
     }
 }
 
-
 #[derive(Default, Debug, Clone)]
 pub struct Tile {
     pub walkable: bool,
@@ -42,14 +37,13 @@ pub struct Tile {
     // ONLY USED FOR PATH FINDING
     pub g: i32,
     pub f: i32,
-    pub previous: Option<Vec2Int>
+    pub previous: Option<Vec2Int>,
 }
-
 
 #[derive(Default, Debug)]
 pub struct MapChunk {
     position: Vec2Int,
-    pub tiles: HashMap<Vec2Int, Tile>
+    pub tiles: HashMap<Vec2Int, Tile>,
 }
 
 impl MapChunk {
@@ -66,29 +60,33 @@ impl MapChunk {
                 } else {
                     "dot"
                 };
-                tiles.insert(Vec2Int::new(x, y) + position, Tile {
-                    walkable: texture_name != "tree",
-                    texture_name: texture_name.into(),
-                    tile_type: match texture_name {
-                        "tree" => TileType::Tree,
-                        _ => TileType::Empty
+                tiles.insert(
+                    Vec2Int::new(x, y) + position,
+                    Tile {
+                        walkable: texture_name != "tree",
+                        texture_name: texture_name.into(),
+                        tile_type: match texture_name {
+                            "tree" => TileType::Tree,
+                            _ => TileType::Empty,
+                        },
+                        ..Default::default()
                     },
-                    ..Default::default()
-                });
+                );
             }
         }
 
-        MapChunk {
-            position,
-            tiles
-        }
+        MapChunk { position, tiles }
     }
 
-    pub fn get_tiles_range_of(&self, start_tile_position: Vec2Int, range: i32) -> HashMap<Vec2Int, Tile> {
+    pub fn get_tiles_range_of(
+        &self,
+        start_tile_position: Vec2Int,
+        range: i32,
+    ) -> HashMap<Vec2Int, Tile> {
         let mut tiles_to_return = HashMap::new();
 
-        for x in -range..range+1 {
-            for y in -range..range+1 {
+        for x in -range..range + 1 {
+            for y in -range..range + 1 {
                 let pos = Vec2Int::new(x, y) + start_tile_position;
                 let pot_tile = self.tiles.get(&pos);
                 if let Some(tile) = pot_tile {
@@ -97,14 +95,9 @@ impl MapChunk {
             }
         }
 
-
         tiles_to_return
     }
 }
-
-
-
-
 
 #[derive(Default, Debug)]
 pub struct Map {
@@ -118,7 +111,7 @@ impl Map {
         chunks.insert(Vec2Int::default(), MapChunk::generate(Vec2Int::default()));
         Map {
             chunks,
-            current_chunk: Vec2Int::default()
+            current_chunk: Vec2Int::default(),
         }
     }
 
@@ -140,7 +133,6 @@ impl Map {
     }
 
     pub fn get_mut_chunk_from_position(&mut self, position: Vec2Int) -> &mut MapChunk {
-
         let Vec2Int { x, y } = position;
 
         let chunk_pos = {
@@ -158,7 +150,6 @@ impl Map {
     }
 
     pub fn get_chunk_from_position(&self, position: Vec2Int) -> &MapChunk {
-
         let Vec2Int { x, y } = position;
 
         let chunk_pos = {
@@ -183,41 +174,57 @@ impl Map {
         chunk.tiles.get(&position)
     }
 
-
     pub fn is_tile_walkable(&self, position: Vec2Int) -> bool {
         if let Some(tile) = self.get_tile_from_grid_position(position) {
-            return tile.walkable
+            return tile.walkable;
         }
 
         false
     }
 
-    pub fn get_all_other_entities_in_chunk(&mut self, world: &mut World, ent: Entity) -> Vec<Entity> {
+    pub fn get_all_other_entities_in_chunk(
+        &mut self,
+        world: &mut World,
+        ent: Entity,
+    ) -> Vec<Entity> {
         let query_ent_position = get_entity_grid_position(world, ent);
         let target_chunk_pos = self.get_chunk_from_position(query_ent_position).position;
 
-        world.query::<&Transform>().iter().filter(|(e, t)| {
-            *e != ent && self.get_chunk_from_position(t.grid_position).position == target_chunk_pos
-        }).map(|(e, _)| e).collect()
+        world
+            .query::<&Transform>()
+            .iter()
+            .filter(|(e, t)| {
+                *e != ent
+                    && self.get_chunk_from_position(t.grid_position).position == target_chunk_pos
+            })
+            .map(|(e, _)| e)
+            .collect()
     }
 
-    pub fn get_all_entities_in_chunk(&mut self, world: &mut World, chunk_pos: Vec2Int) -> Vec<Entity> {
+    pub fn get_all_entities_in_chunk(
+        &mut self,
+        world: &mut World,
+        chunk_pos: Vec2Int,
+    ) -> Vec<Entity> {
         let target_chunk_pos = self.get_chunk_from_position(chunk_pos).position;
 
-        world.query::<&Transform>().iter().filter(|(_, t)| {
-            self.get_chunk_from_position(t.grid_position).position == target_chunk_pos
-        }).map(|(e, _)| e).collect()
+        world
+            .query::<&Transform>()
+            .iter()
+            .filter(|(_, t)| {
+                self.get_chunk_from_position(t.grid_position).position == target_chunk_pos
+            })
+            .map(|(e, _)| e)
+            .collect()
     }
 }
-
-
 
 fn _example() {
     let mut current_chunk_pos = Vec2Int::default();
     let mut map = Map::default();
     map.add_new_chunk(current_chunk_pos.clone());
 
-    current_chunk_pos.x+= 1;
+    current_chunk_pos.x += 1;
 
     let _new_chunk = if let Some(chunk) = map.try_get_chunk(&current_chunk_pos) {
         chunk
@@ -225,22 +232,20 @@ fn _example() {
         map.add_new_chunk(current_chunk_pos.clone());
         map.try_get_chunk(&current_chunk_pos).unwrap()
     };
-} 
-
-
+}
 
 #[cfg(test)]
 mod test {
-    use crate::{math::Vec2Int};
-    use hecs::World;
     use super::*;
+    use crate::math::Vec2Int;
+    use hecs::World;
 
     #[test]
     fn test_get_chunk_pos() {
         let mut map = get_map();
         let try_pos = Vec2Int::new(30, 30);
         let chunk_pos = map.get_chunk_from_position(try_pos).position;
-        assert_eq!(Vec2Int::new(0, 0), chunk_pos);        
+        assert_eq!(Vec2Int::new(0, 0), chunk_pos);
     }
 
     #[test]
@@ -266,37 +271,52 @@ mod test {
         let mut world = World::new();
         let mut map = get_map();
         map.add_new_chunk(Vec2Int::new(1, 1));
-        world.spawn((Transform {
-            grid_position: Vec2Int {
-                x: MAX_CHUNK_SIZE + 1,
-                y: MAX_CHUNK_SIZE + 1
+        world.spawn((
+            Transform {
+                grid_position: Vec2Int {
+                    x: MAX_CHUNK_SIZE + 1,
+                    y: MAX_CHUNK_SIZE + 1,
+                },
+                ..Default::default()
             },
-            ..Default::default()
-        }, true));
+            true,
+        ));
 
-        let a = world.spawn((Transform {
-            grid_position: Vec2Int {
-                x: MAX_CHUNK_SIZE,
-                y: MAX_CHUNK_SIZE
+        let a = world.spawn((
+            Transform {
+                grid_position: Vec2Int {
+                    x: MAX_CHUNK_SIZE,
+                    y: MAX_CHUNK_SIZE,
+                },
+                ..Default::default()
             },
-            ..Default::default()
-        }, true));
+            true,
+        ));
 
-        world.spawn((Transform {
-            grid_position: Vec2Int {
-                x: MAX_CHUNK_SIZE - 1,
-                y: MAX_CHUNK_SIZE - 1
+        world.spawn((
+            Transform {
+                grid_position: Vec2Int {
+                    x: MAX_CHUNK_SIZE - 1,
+                    y: MAX_CHUNK_SIZE - 1,
+                },
+                ..Default::default()
             },
-            ..Default::default()
-        }, true));
+            true,
+        ));
 
         assert_eq!(map.get_all_other_entities_in_chunk(&mut world, a).len(), 1);
 
-
-        assert_eq!(map.get_all_entities_in_chunk(&mut world, Vec2Int {
-            x: MAX_CHUNK_SIZE - 1,
-            y: MAX_CHUNK_SIZE - 1
-        }).len(), 1);
+        assert_eq!(
+            map.get_all_entities_in_chunk(
+                &mut world,
+                Vec2Int {
+                    x: MAX_CHUNK_SIZE - 1,
+                    y: MAX_CHUNK_SIZE - 1
+                }
+            )
+            .len(),
+            1
+        );
     }
 
     #[test]

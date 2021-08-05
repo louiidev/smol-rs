@@ -1,21 +1,17 @@
-use crate::{core::get_context, math::{Matrix, Vec2}};
-
-
-
-
+use crate::{
+    core::get_context,
+    math::{Matrix, Vec2},
+};
 
 pub struct Camera {
-    pub zoom: f32
+    pub zoom: f32,
 }
 
 impl Camera {
     pub fn new() -> Self {
-        Camera {
-            zoom: 1.
-        }
+        Camera { zoom: 1. }
     }
 }
-
 
 impl Camera {
     pub fn get_projection(&self) -> Matrix {

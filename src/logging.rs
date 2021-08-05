@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::{collections::VecDeque, sync::Mutex};
 
-use crate::render::{BLACK, BLUE, Color, GREEN, RED, WHITE};
+use crate::render::Color;
 
 pub type LogItemValue = (String, Color);
 
@@ -116,11 +116,11 @@ fn lex(input: &str) -> Vec<Token> {
 
 fn log_color_to_color(log_color: LogColors) -> Color {
     match log_color {
-        LogColors::Red => RED,
-        LogColors::Blue => BLUE,
-        LogColors::Green => GREEN,
-        LogColors::Black => BLACK,
-        _ => WHITE,
+        LogColors::Red => Color::RED,
+        LogColors::Blue => Color::BLUE,
+        LogColors::Green => Color::GREEN,
+        LogColors::Black => Color::BLACK,
+        _ => Color::WHITE,
     }
 }
 
@@ -147,7 +147,7 @@ fn parse_tokens(tokens: Vec<Token>) -> Vec<LogItemValue> {
             }
             Token::CloseParen => {}
             Token::Text(text) => {
-                log.push((text.to_owned(), WHITE));
+                log.push((text.to_owned(), Color::WHITE));
             }
             Token::Color(_) => {}
         }
@@ -179,9 +179,9 @@ fn parsing() {
     let log_message = parse_tokens(tokens);
 
     let expect_log = vec![
-        ("Hello ".to_owned(), BLUE),
-        ("World, My ".to_owned(), WHITE),
-        ("name is louis!".to_owned(), RED),
+        ("Hello ".to_owned(), Color::BLUE),
+        ("World, My ".to_owned(), Color::WHITE),
+        ("name is louis!".to_owned(), Color::RED),
     ];
 
     assert_eq!(log_message, expect_log)
@@ -199,7 +199,7 @@ fn parsing_normal_text() {
 
     let log_message = parse_tokens(tokens);
 
-    let expect_log = vec![("Hello world my name is louis!".to_owned(), WHITE)];
+    let expect_log = vec![("Hello world my name is louis!".to_owned(), Color::WHITE)];
 
     assert_eq!(log_message, expect_log)
 }

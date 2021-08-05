@@ -66,15 +66,10 @@ impl RenderBatch {
         let mut index_buffer_object_id: u32 = 0;
 
         let mut verticies: [f32; VERTICIES_LEN] = [
-            -1.5, -0.5,   0.18, 0.6, 0.96, 1.0,
-            -0.5, -0.5,   0.18, 0.6, 0.96, 1.0,
-            -0.5, 1.,    0.18, 0.6, 0.96, 1.0,
-            -1.5, 1.,    0.18, 0.6, 0.96, 1.0,
-
-            0.5, -0.5,    1., 0.93, 0.24, 1.0,
-            1.5, -0.5,    1., 0.93, 0.24, 1.0,
-            1.5, 0.5,     1., 0.93, 0.24, 1.0,
-            0.5, 0.5,     1., 0.93, 0.24, 1.0,
+            -1.5, -0.5, 0.18, 0.6, 0.96, 1.0, -0.5, -0.5, 0.18, 0.6, 0.96, 1.0, -0.5, 1., 0.18,
+            0.6, 0.96, 1.0, -1.5, 1., 0.18, 0.6, 0.96, 1.0, 0.5, -0.5, 1., 0.93, 0.24, 1.0, 1.5,
+            -0.5, 1., 0.93, 0.24, 1.0, 1.5, 0.5, 1., 0.93, 0.24, 1.0, 0.5, 0.5, 1., 0.93, 0.24,
+            1.0,
         ];
 
         //RenderBatch::gen_vertex_props(&mut verticies, 0, Vec2::new(50., 50.), Color(0.18 * 25.5, 0.6 * 255., 0.96 * 255., 255.));
@@ -149,7 +144,12 @@ impl RenderBatch {
         }
     }
 
-    fn gen_vertex_props(verticies: &mut [f32; VERTICIES_LEN as usize], index: usize, position: Vec2, color: Color) {
+    fn gen_vertex_props(
+        verticies: &mut [f32; VERTICIES_LEN as usize],
+        index: usize,
+        position: Vec2,
+        color: Color,
+    ) {
         let mut offset: usize = index * 4 * VERTEX_SIZE as usize;
         let mut x_add = 1.0;
         let mut y_add = 1.0;
@@ -215,12 +215,9 @@ impl RenderBatch {
         });
         let float_model: [f32; 16] = model.into();
         unsafe {
-
             gl::UseProgram(self.shader_2d);
 
-
             self.set_projection(640., 480.);
-            
 
             gl::UniformMatrix4fv(
                 get_uniform_location(self.shader_2d, "model"),
@@ -231,12 +228,7 @@ impl RenderBatch {
 
             gl::BindVertexArray(self.vao_id);
 
-            gl::DrawElements(
-                gl::TRIANGLES,
-                2 * 6,
-                gl::UNSIGNED_INT,
-                ptr::null(),
-            );
+            gl::DrawElements(gl::TRIANGLES, 2 * 6, gl::UNSIGNED_INT, ptr::null());
             gl_check_errors();
             gl::BindVertexArray(0);
 

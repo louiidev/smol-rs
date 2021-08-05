@@ -9,7 +9,7 @@
 
 use gl::types::*;
 use glyph_brush::{ab_glyph::*, *};
-use std::{ ffi::CString, mem, ptr, str};
+use std::{ffi::CString, mem, ptr, str};
 
 macro_rules! gl_assert_ok {
     () => {{
@@ -26,7 +26,6 @@ pub struct TextRenderer {
     glyph_brush: GlyphBrush<Vertex>,
     max_image_dimension: u32,
 }
-
 
 pub type TextAlignment = HorizontalAlign;
 
@@ -49,14 +48,13 @@ impl Default for TextQueueConfig {
     }
 }
 
-
 impl TextRenderer {
     pub fn new(x: i32, y: i32) -> TextRenderer {
         // let dejavu = FontRef::try_from_slice(include_bytes!("../assets/OpenSans-Light.ttf")).unwrap();
         let dejavu = FontArc::try_from_slice(include_bytes!("../assets/ThaleahFat.ttf")).unwrap();
         let glyph_brush: GlyphBrush<Vertex> = GlyphBrushBuilder::using_font(dejavu).build();
         let texture = GlGlyphTexture::new(glyph_brush.texture_dimensions());
-        let text_pipe = GlTextPipe::new(Vec2Int{ x, y }).unwrap();
+        let text_pipe = GlTextPipe::new(Vec2Int { x, y }).unwrap();
 
         let max_image_dimension = {
             let mut value = 0;
@@ -68,64 +66,65 @@ impl TextRenderer {
             text_pipe,
             texture,
             glyph_brush,
-            max_image_dimension
+            max_image_dimension,
         }
     }
 
-    pub fn queue_multiple(&mut self, text: Vec<(String, Color)>, position: Vec2, font_size: f32) -> Option<Rect> {
+    pub fn queue_multiple(
+        &mut self,
+        text: Vec<(String, Color)>,
+        position: Vec2,
+        font_size: f32,
+    ) -> Option<Rect> {
         let scale = (font_size * get_window_scale().x).round();
-        let mut section= Section::default()
+        let mut section = Section::default()
             .with_screen_position((position.x, position.y))
             .with_layout(
                 Layout::default()
                     .h_align(HorizontalAlign::Left)
                     .v_align(VerticalAlign::Top),
             );
-            let text_group: Vec<Text> = text.iter().map(|(t, color)| {
+        let text_group: Vec<Text> = text
+            .iter()
+            .map(|(t, color)| {
                 let (r, g, b, a) = color.into_gl();
                 let base_text = Text::new(&t).with_scale(scale).with_color([r, g, b, a]);
                 base_text
-            }).collect();
+            })
+            .collect();
 
-            for base_text in text_group {
-                section = section.add_text(base_text);
-            }
-
-            
+        for base_text in text_group {
+            section = section.add_text(base_text);
+        }
 
         let bounds = self.glyph_brush.glyph_bounds(&section);
 
-        self.glyph_brush.queue(
-            section
-        );
+        self.glyph_brush.queue(section);
 
         bounds
-
     }
 
     pub fn get_text_bounds(&mut self, text: &str, text_config: TextQueueConfig) -> Option<Rect> {
-
         let scale = (text_config.font_size * get_window_scale().x).round();
         let base_text = Text::new(text).with_scale(scale);
 
-        let section= Section::default()
-        .add_text(base_text)
-        .with_screen_position((text_config.position.x, text_config.position.y))
-        .with_layout(
-            Layout::default()
-                .h_align(text_config.horizontal_alginment)
-                .v_align(VerticalAlign::Top),
-        );
+        let section = Section::default()
+            .add_text(base_text)
+            .with_screen_position((text_config.position.x, text_config.position.y))
+            .with_layout(
+                Layout::default()
+                    .h_align(text_config.horizontal_alginment)
+                    .v_align(VerticalAlign::Top),
+            );
 
         self.glyph_brush.glyph_bounds(&section)
     }
 
     pub fn queue_text_ex(&mut self, text: &str, text_config: TextQueueConfig) -> Option<Rect> {
-
         let scale = (text_config.font_size * get_window_scale().x).round();
         let base_text = Text::new(text).with_scale(scale);
         let (r, g, b, a) = text_config.color.into_gl();
-        let section= Section::default()
+        let section = Section::default()
             .add_text(base_text.with_color([r, g, b, a]))
             .with_screen_position((text_config.position.x, text_config.position.y))
             .with_layout(
@@ -136,21 +135,16 @@ impl TextRenderer {
 
         let bounds = self.glyph_brush.glyph_bounds(&section);
 
-        self.glyph_brush.queue(
-            section
-        );
+        self.glyph_brush.queue(section);
 
         bounds
     }
-    
 
     pub fn on_resize_window(&self, window_size: Vec2Int) {
         self.text_pipe.update_geometry(window_size);
     }
 
-
     pub fn render_queue(&mut self) {
-
         let texture_name = self.texture.name;
 
         let mut brush_action;
@@ -159,7 +153,7 @@ impl TextRenderer {
                 |rect, tex_data| unsafe {
                     // Update part of gpu texture with new glyph alpha values
                     gl::BindTexture(gl::TEXTURE_2D, texture_name);
-                    
+
                     gl::TexSubImage2D(
                         gl::TEXTURE_2D,
                         0,
@@ -189,10 +183,10 @@ impl TextRenderer {
                     };
                     eprint!("\r                            \r");
                     eprintln!("Resizing glyph texture -> {}x{}", new_width, new_height);
-    
+
                     // Recreate texture as a larger size to fit more
                     self.texture = GlGlyphTexture::new((new_width, new_height));
-    
+
                     self.glyph_brush.resize_texture(new_width, new_height);
                 }
             }
@@ -208,11 +202,14 @@ impl TextRenderer {
     }
 }
 
-use crate::{core::{get_window_scale}, math::{Matrix, Vec2, Vec2Int, Vec3}, render::{Color, get_uniform_location}};
+use crate::{
+    core::get_window_scale,
+    math::{Matrix, Vec2, Vec2Int, Vec3},
+    render::{get_uniform_location, Color},
+};
 
 pub type Res<T> = Result<T, Box<dyn std::error::Error>>;
 /// `[left_top * 3, right_bottom * 2, tex_left_top * 2, tex_right_bottom * 2, color * 4]`
-
 
 pub fn gl_err_to_str(err: u32) -> &'static str {
     match err {
@@ -289,10 +286,10 @@ pub fn link_program(vs: GLuint, fs: GLuint) -> Res<GLuint> {
 #[inline]
 pub fn to_vertex(
     glyph_brush::GlyphVertex {
-    mut tex_coords,
-    pixel_coords,
-    bounds,
-    extra,
+        mut tex_coords,
+        pixel_coords,
+        bounds,
+        extra,
     }: glyph_brush::GlyphVertex,
 ) -> Vertex {
     let gl_bounds = bounds;
@@ -493,7 +490,11 @@ impl GlTextPipe {
     pub fn set_offset(&self, offset: Vec2) {
         unsafe {
             gl::UseProgram(self.program);
-            let view = Matrix::translate(Vec3 { x: offset.x, y: offset.y, z: 0.0 });
+            let view = Matrix::translate(Vec3 {
+                x: offset.x,
+                y: offset.y,
+                z: 0.0,
+            });
 
             let float_view: [f32; 16] = view.into();
             gl::UniformMatrix4fv(
@@ -509,7 +510,11 @@ impl GlTextPipe {
     pub fn reset_offset(&self) {
         unsafe {
             gl::UseProgram(self.program);
-            let view = Matrix::translate(Vec3 { x: 0.0, y: 0.0, z: 0.0 });
+            let view = Matrix::translate(Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            });
 
             let float_view: [f32; 16] = view.into();
             gl::UniformMatrix4fv(
@@ -521,7 +526,6 @@ impl GlTextPipe {
             gl::UseProgram(0);
         }
     }
-
 
     pub fn upload_vertices(&mut self, vertices: &[Vertex]) {
         // Draw new vertices
@@ -565,7 +569,7 @@ impl GlTextPipe {
     pub fn draw(&self) {
         unsafe {
             gl::UseProgram(self.program);
-            
+
             gl::BindVertexArray(self.vao);
             gl::DrawArraysInstanced(gl::TRIANGLE_STRIP, 0, 4, self.vertex_count as _);
             gl::UseProgram(0);
@@ -584,4 +588,3 @@ impl Drop for GlTextPipe {
         }
     }
 }
-

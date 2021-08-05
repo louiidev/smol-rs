@@ -4,7 +4,11 @@ use hashbrown::HashMap;
 use hecs::{Entity, EntityRef, World};
 use rand::Rng;
 
-use crate::{events::{DamageAction, Events, Action }, math::{Vec2Int, Vec2}, render::Color};
+use crate::{
+    events::{Action, DamageAction, Events},
+    math::{Vec2, Vec2Int},
+    render::Color,
+};
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Invulnerable;
@@ -17,10 +21,10 @@ impl Invulnerable {
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Physics {
-   pub health: u16,
-   pub max_health: u16,
-   pub speed: f32,
-   pub energy: f32
+    pub health: u16,
+    pub max_health: u16,
+    pub speed: f32,
+    pub energy: f32,
 }
 
 impl Physics {
@@ -29,28 +33,26 @@ impl Physics {
             health: starting_health,
             max_health: starting_health,
             speed,
-            energy: 0.
+            energy: 0.,
         }
     }
 
     pub fn take_damage(&mut self, action: &mut DamageAction) {
-        self.health-= action.amount;
+        self.health -= action.amount;
     }
 
     pub fn generate_energy(&mut self) {
-        self.energy+= self.speed;
+        self.energy += self.speed;
     }
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Weapon {
-    pub attack: u16
+    pub attack: u16,
 }
-
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct PlayerController;
-
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Transform {
@@ -60,9 +62,7 @@ pub struct Transform {
 }
 
 impl Transform {
-    pub fn new_center() {
-
-    }
+    pub fn new_center() {}
 
     pub fn move_pos(&mut self, grid_position: Vec2Int) {
         self.grid_position = grid_position;
@@ -71,9 +71,9 @@ impl Transform {
     }
 
     pub fn move_direction(&mut self, grid_direction: Vec2Int) {
-        self.grid_position+= grid_direction;
+        self.grid_position += grid_direction;
         let grid_pos: Vec2 = grid_direction.into();
-        self.screen_positon+= Vec2::new(grid_pos.x * 16., grid_pos.y * 16.);
+        self.screen_positon += Vec2::new(grid_pos.x * 16., grid_pos.y * 16.);
     }
 }
 
@@ -81,13 +81,13 @@ impl Transform {
 pub struct SpriteRenderer {
     pub scale: Vec2,
     pub name: String,
-    pub color: Color
+    pub color: Color,
 }
 
 impl Default for SpriteRenderer {
     fn default() -> Self {
         SpriteRenderer {
-            scale: Vec2 { x: 1., y: 1.},
+            scale: Vec2 { x: 1., y: 1. },
             color: Color(255, 255, 255, 1.),
             name: "".to_string(),
         }
@@ -108,7 +108,7 @@ impl Relationship {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct Relationships (pub HashMap<Entity, Relationship>);
+pub struct Relationships(pub HashMap<Entity, Relationship>);
 
 impl Relationships {
     pub fn is_enemy(&self, e: Entity) -> bool {
@@ -120,11 +120,10 @@ impl Relationships {
     }
 }
 
-
 #[derive(Debug, Clone, Default)]
 pub struct Actor {
     pub action: Option<Action>,
-    pub relationships: Relationships
+    pub relationships: Relationships,
 }
 
 impl Actor {
@@ -138,19 +137,14 @@ impl Actor {
             event = Events::MoveTo(Vec2Int::new(x, y) + grid_pos);
         }
 
-        Action {
-            cost: 1.,
-            event
-        }
+        Action { cost: 1., event }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Captured {
-    pub owner: Entity
+    pub owner: Entity,
 }
-
-
 
 // pub fn follow_target() -> Action {
 
@@ -163,21 +157,14 @@ pub struct Captured {
 //     if range > 1 {
 //         return follow_target()
 //     } else {
-        
+
 //     }
 // }
 
-
-
 // Find goal
 // push goal kill player
-// do action 
-// 
-
-
-
-
-
+// do action
+//
 
 pub fn find_action() {
 
@@ -185,14 +172,9 @@ pub fn find_action() {
     // if goals.len() > 0
     // try goal until valid
     // else search map
-
-
 }
 
-
 fn try_attack(world: &mut World, user: Entity, target: Entity) -> bool {
-      
-
     false
 }
 
@@ -200,22 +182,18 @@ pub trait Goal {
     fn finished(&self) -> bool;
     fn get_action(&self) -> Action;
     fn can_get_action_from_goal(&self) -> bool;
-} 
-
+}
 
 pub struct GoalHandler {
-    pub goals: Vec<Box<dyn Goal>>
-} 
+    pub goals: Vec<Box<dyn Goal>>,
+}
 
 fn get_child_goal<T: Goal>() -> Option<T> {
-
-
     None
 }
 
-impl  GoalHandler {
+impl GoalHandler {
     pub fn get_action(&mut self) -> Action {
-
         while self.goals.last().is_some() && self.goals.last().unwrap().finished() {
             self.goals.pop();
         }
@@ -237,12 +215,9 @@ impl  GoalHandler {
     }
 }
 
-
-
-
 #[derive(Default)]
 pub struct Inventory {
-    pub items: Vec<Box<dyn Item>>
+    pub items: Vec<Box<dyn Item>>,
 }
 
 // impl Inventory {
@@ -250,7 +225,6 @@ pub struct Inventory {
 
 //     }
 // }
-
 
 // #[derive(Default, Debug)]
 // pub struct Item {
@@ -261,9 +235,12 @@ pub struct Inventory {
 
 pub trait Item: Send + Sync + ItemClone + Debug {
     fn get_action(&self, world: &mut World, parent: Entity) -> Option<Action>;
-    fn name(&self) -> &str { "no name" }
-    fn description(&self) -> &str { "no description" }
-    
+    fn name(&self) -> &str {
+        "no name"
+    }
+    fn description(&self) -> &str {
+        "no description"
+    }
 }
 
 pub trait ItemClone {
@@ -286,30 +263,27 @@ impl Clone for Box<dyn Item> {
 }
 
 #[derive(Clone, Default, Debug)]
-pub struct HealthPotion {
-
-}
+pub struct HealthPotion {}
 
 impl Item for HealthPotion {
     fn get_action(&self, world: &mut World, parent: Entity) -> Option<Action> {
-        
         Some(Action {
             cost: 1.,
-            event: Events::Empty
+            event: Events::Empty,
         })
     }
 
-    fn name(&self) -> &str { "Health Potion" }
+    fn name(&self) -> &str {
+        "Health Potion"
+    }
 
-    fn description(&self) -> &str { "no description" }
+    fn description(&self) -> &str {
+        "no description"
+    }
 }
 
-
-
-
-
 struct KillTarget {
-    target: u32
+    target: u32,
 }
 
 impl Goal for KillTarget {
@@ -323,13 +297,9 @@ impl Goal for KillTarget {
     fn can_get_action_from_goal(&self) -> bool {
         true
     }
-    
-
 }
 
-struct B {
-
-}
+struct B {}
 
 impl Goal for B {
     fn finished(&self) -> bool {
@@ -342,9 +312,7 @@ impl Goal for B {
     fn can_get_action_from_goal(&self) -> bool {
         true
     }
-
 }
-
 
 #[cfg(test)]
 mod test {
@@ -354,9 +322,8 @@ mod test {
 
     #[test]
     fn test_goal_handler() {
-       let goal_handler = GoalHandler {
-            goals: vec![Box::new(B {}), Box::new(KillTarget { target: 5}) ],
+        let goal_handler = GoalHandler {
+            goals: vec![Box::new(B {}), Box::new(KillTarget { target: 5 })],
         };
     }
-
 }
