@@ -146,38 +146,6 @@ pub struct Captured {
     pub owner: Entity,
 }
 
-// pub fn follow_target() -> Action {
-
-// }
-
-// pub fn kill_target_goal(target: Entity) -> Action
-// {
-//     let range = calc_range();
-
-//     if range > 1 {
-//         return follow_target()
-//     } else {
-
-//     }
-// }
-
-// Find goal
-// push goal kill player
-// do action
-//
-
-pub fn find_action() {
-
-    // Check current goals
-    // if goals.len() > 0
-    // try goal until valid
-    // else search map
-}
-
-fn try_attack(world: &mut World, user: Entity, target: Entity) -> bool {
-    false
-}
-
 pub trait Goal {
     fn finished(&self) -> bool;
     fn get_action(&self) -> Action;

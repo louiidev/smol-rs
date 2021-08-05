@@ -185,15 +185,15 @@ pub fn query_world_input(input_state: &mut InputState, world: &World, player: En
     let mut temp_pos = None;
 
     if is_key_down(Keycode::W) {
-        temp_pos = Some(Vec2Int::down())
+        temp_pos = Some(Vec2Int::DOWN);
     } else if is_key_down(Keycode::S) {
-        temp_pos = Some(Vec2Int::up())
+        temp_pos = Some(Vec2Int::UP);
     }
 
     if is_key_down(Keycode::A) {
-        temp_pos = Some(Vec2Int::left());
+        temp_pos = Some(Vec2Int::LEFT);
     } else if is_key_down(Keycode::D) {
-        temp_pos = Some(Vec2Int::right());
+        temp_pos = Some(Vec2Int::RIGHT);
     }
 
     if temp_pos.is_some() {
