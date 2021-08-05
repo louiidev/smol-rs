@@ -1,25 +1,22 @@
-use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Neg};
-
 use glyph_brush::ab_glyph::Rect;
-
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Rectangle {
     pub x: f32,
     pub y: f32,
     pub w: f32,
-    pub h: f32
+    pub h: f32,
 }
 
 impl Rectangle {
     pub fn add_padding(&mut self, expand_by: Vec2) {
-        self.x-= expand_by.x;
-        self.y-= expand_by.y;
-        self.w+= expand_by.x * 2.;
-        self.h+= expand_by.y * 2.;
+        self.x -= expand_by.x;
+        self.y -= expand_by.y;
+        self.w += expand_by.x * 2.;
+        self.h += expand_by.y * 2.;
     }
 }
-
 
 impl From<Rect> for Rectangle {
     fn from(item: Rect) -> Self {
@@ -27,11 +24,10 @@ impl From<Rect> for Rectangle {
             x: item.min.x,
             y: item.min.y,
             h: item.height(),
-            w: item.width()
+            w: item.width(),
         }
     }
 }
-
 
 pub fn clamp(min: f32, max: f32, value: f32) -> f32 {
     f32::min(f32::max(min, value), max)
@@ -40,7 +36,7 @@ pub fn clamp(min: f32, max: f32, value: f32) -> f32 {
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Vec2 {
     pub x: f32,
-    pub y: f32
+    pub y: f32,
 }
 
 impl std::hash::Hash for Vec2 {
@@ -57,10 +53,7 @@ impl Eq for Vec2 {}
 
 impl Vec2 {
     pub fn new(x: f32, y: f32) -> Self {
-        Vec2 {
-            x,
-            y
-        }
+        Vec2 { x, y }
     }
 
     pub fn length(self) -> f32 {
@@ -85,7 +78,7 @@ impl Vec2 {
         let x = self.x - v.x;
         let y = self.y - v.y;
 
-        f32::sqrt(x*x + y*y)
+        f32::sqrt(x * x + y * y)
     }
 }
 
@@ -227,26 +220,18 @@ impl Neg for Vec2 {
     }
 }
 
-
-
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
-    pub z: f32
+    pub z: f32,
 }
 
 impl Vec3 {
     pub fn new(x: f32, y: f32, z: f32) -> Self {
-        Vec3 {
-            x,
-            y,
-            z
-        }
+        Vec3 { x, y, z }
     }
-
 }
-
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Vec4 {
@@ -258,14 +243,8 @@ pub struct Vec4 {
 
 impl Vec4 {
     pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
-        Vec4 {
-            x,
-            y,
-            z,
-            w,
-        }
+        Vec4 { x, y, z, w }
     }
-
 }
 
 impl From<Vec3> for Vec4 {
@@ -274,7 +253,7 @@ impl From<Vec3> for Vec4 {
             x: item.x,
             y: item.y,
             z: item.z,
-            w: 0.
+            w: 0.,
         }
     }
 }
@@ -282,21 +261,18 @@ impl From<Vec3> for Vec4 {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub struct Vec2Int {
     pub x: i32,
-    pub y: i32
+    pub y: i32,
 }
 
 impl Vec2Int {
     pub fn new(x: i32, y: i32) -> Self {
-        Vec2Int {
-            x,
-            y
-        }
+        Vec2Int { x, y }
     }
 
-    pub const UP: Vec2Int = Vec2Int{x: 0, y: 1};
-    pub const RIGHT: Vec2Int = Vec2Int{x:1, y: 0};
-    pub const LEFT: Vec2Int = Vec2Int{ x: -1, y: 0};
-    pub const DOWN: Vec2Int = Vec2Int{ x: 0, y: -1};    
+    pub const UP: Vec2Int = Vec2Int { x: 0, y: 1 };
+    pub const RIGHT: Vec2Int = Vec2Int { x: 1, y: 0 };
+    pub const LEFT: Vec2Int = Vec2Int { x: -1, y: 0 };
+    pub const DOWN: Vec2Int = Vec2Int { x: 0, y: -1 };
 
     pub fn distance(self, v: Vec2Int) -> i32 {
         // Manhattan distance
@@ -327,7 +303,7 @@ impl From<Vec2> for Vec3 {
         Vec3 {
             x: item.x,
             y: item.y,
-            z: 0.0
+            z: 0.0,
         }
     }
 }
@@ -337,8 +313,6 @@ impl AddAssign for Vec2Int {
         *self = *self + v;
     }
 }
-
-
 
 impl Add for Vec2Int {
     type Output = Vec2Int;
@@ -380,7 +354,6 @@ impl Mul<i32> for Vec2Int {
     }
 }
 
-
 impl MulAssign for Vec2Int {
     fn mul_assign(&mut self, v: Vec2Int) {
         *self = *self * v;
@@ -392,7 +365,6 @@ impl MulAssign<i32> for Vec2Int {
         *self = *self * value;
     }
 }
-
 
 impl Div for Vec2Int {
     type Output = Vec2Int;
@@ -426,7 +398,6 @@ impl DivAssign<i32> for Vec2Int {
     }
 }
 
-
 impl Sub for Vec2Int {
     type Output = Vec2Int;
     fn sub(self, v: Vec2Int) -> Self {
@@ -459,7 +430,7 @@ impl SubAssign<i32> for Vec2Int {
     }
 }
 
-
+#[rustfmt::skip]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Matrix
 {
@@ -469,7 +440,7 @@ pub struct Matrix
 	m3: f32, m7: f32, m11: f32, m15: f32
 }
 
-
+#[rustfmt::skip]
 impl From<Matrix> for [f32; 16] {
     fn from(item: Matrix) -> Self {
         [
@@ -481,7 +452,7 @@ impl From<Matrix> for [f32; 16] {
     }
 }
 
-
+#[rustfmt::skip]
 impl Matrix {
     pub fn translate(base: Vec3) -> Self {
         Matrix {
@@ -497,8 +468,6 @@ impl Matrix {
 		self.m5 *= scale.y;
     }
 
-    
-    #[rustfmt::skip]
     pub fn ortho(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Self
     {
 
@@ -518,4 +487,3 @@ impl Matrix {
         }
     }
 }
- 

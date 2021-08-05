@@ -13,6 +13,7 @@ use hecs::{Entity, World};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct DamageAction {
+    pub attacker: Option<Entity>,
     pub amount: u16,
 }
 
@@ -57,6 +58,10 @@ fn event_take_damage(world: &mut World, ent: Entity, action: &mut DamageAction) 
     if let Ok(mut comp) = world.get_mut::<Physics>(ent) {
         comp.take_damage(action);
     }
+
+    if let Some(attacker) = action.attacker {
+        create_bad_relationship(world, ent, attacker);
+    }
 }
 
 fn event_move_to(world: &mut World, ent: Entity, mut action: Vec2Int) {
@@ -86,6 +91,17 @@ fn event_throw_item(world: &mut World, ent: Entity, action: &mut ThrowAction) {
         action.item.name(),
         action.target
     ));
+}
+
+fn event_attack(world: &mut World, ent: Entity, action: &mut AttackAction) {
+    run_event_system_hecs(
+        world,
+        action.target,
+        &mut Events::TakeDamage(DamageAction {
+            attacker: Some(ent),
+            amount: action.amount,
+        }),
+    );
 }
 
 fn find_entities_in_distance(world: &mut World, ent: Entity, max_distance: f32) -> Vec<Entity> {
@@ -127,6 +143,13 @@ pub fn get_ai_action(world: &mut World, ent: Entity, relationships: Relationship
             }
         } else {
             // attack
+            return Action {
+                cost: 1.,
+                event: Events::Attack(AttackAction {
+                    amount: 1,
+                    target: *target,
+                }),
+            };
         }
     }
 
@@ -146,6 +169,7 @@ pub fn run_event_system_hecs(world: &mut World, ent: Entity, event: &mut Events)
         Events::MoveTo(action) => event_move_to(world, ent, *action),
         Events::MoveDirection(action) => event_move_direction(world, ent, action),
         Events::ThrowItem(action) => event_throw_item(world, ent, action),
+        Events::Attack(action) => event_attack(world, ent, action),
         _ => {}
     }
 }
