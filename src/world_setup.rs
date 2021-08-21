@@ -1,11 +1,8 @@
 use crate::components::*;
 use crate::math::*;
-use hecs::Entity;
 use hecs::World;
 
-pub type WorldPlayer = (World, Entity);
-
-pub fn setup_world() -> WorldPlayer {
+pub fn setup_world() -> World {
     let mut world = World::new();
 
     let player = world.spawn((
@@ -44,5 +41,5 @@ pub fn setup_world() -> WorldPlayer {
         },
     ));
 
-    (world, player)
+    world
 }

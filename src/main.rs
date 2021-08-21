@@ -7,6 +7,7 @@ use smol_rs::math::*;
 use smol_rs::pathfinding::a_star;
 use smol_rs::queries::get_entity_grid_position;
 use smol_rs::render::*;
+use smol_rs::systems::cleanup_dead_entities;
 use smol_rs::texture_packer::TexturePacker;
 use smol_rs::ui::sidebar::SideBar;
 use smol_rs::ui::window::{self, WindowState};
@@ -18,7 +19,7 @@ fn main() {
     let mut input_state = InputState::default();
     let mut items_window = window::ItemsWindow::new(Vec::default());
 
-    let (mut world, player) = setup_world();
+    let mut world = setup_world();
     // let mut batch = RenderBatch::default();
 
     let texture_packer = TexturePacker::new();
@@ -27,14 +28,15 @@ fn main() {
     let sidebar = SideBar {};
 
     while is_running() {
-        context_menu.update(&mut input_state, &world, player);
+        context_menu.update(&mut input_state, &world);
         if input_state.ui_action_type.is_some() {
-            items_window.update(&mut input_state, &world, player);
+            items_window.update(&mut input_state, &world);
         }
 
-        query_world_input(&mut input_state, &world, player);
+        query_world_input(&mut input_state, &world);
 
-        update(&mut input_state, &mut world, player);
+        update(&mut input_state, &mut world);
+        cleanup_dead_entities(&mut world);
 
         clear(Color(28, 33, 43, 1.));
 
@@ -91,12 +93,11 @@ fn main() {
         }
 
         log_info_box.render();
-        sidebar.render(&world, player);
+        sidebar.render(&world);
         // queue_text(&format!("FPS: {}", fps()), Vec2::default(), 20., Color(150, 50, 50, 1.));
         if input_state.ui_action_type.is_some() {
             items_window.render();
         }
-
         end_render();
     }
 }

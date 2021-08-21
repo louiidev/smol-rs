@@ -6,6 +6,7 @@ use crate::core::{
 };
 use crate::input::{get_mouse_pos, is_mouse_down, InputState};
 use crate::math::{Rectangle, Vec2};
+use crate::queries::get_player_entity;
 use crate::render::Color;
 use crate::text_render::{TextAlignment, TextQueueConfig};
 use glyph_brush::ab_glyph::Rect;
@@ -58,11 +59,13 @@ impl ItemsWindow {
         }
     }
 
-    pub fn update(&mut self, input_state: &mut InputState, world: &World, player: Entity) {
+    pub fn update(&mut self, input_state: &mut InputState, world: &World) {
         if self.items.is_empty() || self.state.selected {
-            let inventory = world.get::<Inventory>(player).unwrap();
-            self.items = inventory.items.clone();
-            self.state.selected = false;
+            if let Some(player) = get_player_entity(&world) {
+                let inventory = world.get::<Inventory>(player).unwrap();
+                self.items = inventory.items.clone();
+                self.state.selected = false;
+            }
         }
 
         let mouse_pos = get_mouse_pos();

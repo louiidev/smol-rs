@@ -4,15 +4,12 @@ use crate::events::{Action, Events, ThrowAction};
 use crate::map::get_map;
 use crate::math::{Vec2, Vec2Int};
 use crate::pathfinding::a_star;
-use crate::queries::get_entity_grid_position;
+use crate::queries::{get_entity_grid_position, get_player_entity};
 use crate::systems::run_actor_actions;
-use crate::ui::{self, ContextMenuAction};
-use crate::world_setup::WorldPlayer;
-use hashbrown::HashMap;
-use hecs::{Entity, World};
+use crate::ui::ContextMenuAction;
+use hecs::World;
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::MouseState;
-use sdl2::rect::Point;
 use sdl2::EventPump;
 use std::collections::HashSet;
 
@@ -177,7 +174,7 @@ pub fn screen_to_grid(screen_pos: Vec2Int) -> Vec2Int {
     grid_pos
 }
 
-pub fn query_world_input(input_state: &mut InputState, world: &World, player: Entity) {
+pub fn query_world_input(input_state: &mut InputState, world: &World) {
     if input_state.world_input_block {
         return;
     }
@@ -197,14 +194,18 @@ pub fn query_world_input(input_state: &mut InputState, world: &World, player: En
     }
 
     if temp_pos.is_some() {
-        let player_pos = get_entity_grid_position(world, player);
-        input_state.path = vec![temp_pos.unwrap() + player_pos];
+        if let Some(player) = get_player_entity(world) {
+            let player_pos = get_entity_grid_position(world, player);
+            input_state.path = vec![temp_pos.unwrap() + player_pos];
+        }
     }
 
     if is_key_down(Keycode::P) {
-        let player_pos = get_entity_grid_position(world, player);
-        input_state.control_type = ControlType::Keyboard(player_pos);
-        input_state.start_grid_path = Some(player_pos);
+        if let Some(player) = get_player_entity(world) {
+            let player_pos = get_entity_grid_position(world, player);
+            input_state.control_type = ControlType::Keyboard(player_pos);
+            input_state.start_grid_path = Some(player_pos);
+        }
     }
 
     if input_state.start_grid_path.is_some() {
@@ -228,44 +229,50 @@ pub fn query_world_input(input_state: &mut InputState, world: &World, player: En
             input_state.end_grid_path = None;
         }
     } else if is_mouse_down(MouseButton::Left) {
-        let player_pos = get_entity_grid_position(world, player);
-        if player_pos == screen_to_grid(get_mouse_pos()) {
-            input_state.control_type = ControlType::Mouse;
-            input_state.start_grid_path = Some(player_pos);
+        if let Some(player) = get_player_entity(world) {
+            let player_pos = get_entity_grid_position(world, player);
+            if player_pos == screen_to_grid(get_mouse_pos()) {
+                input_state.control_type = ControlType::Mouse;
+                input_state.start_grid_path = Some(player_pos);
+            }
         }
     }
 }
 
-pub fn update(input_state: &mut InputState, world: &mut World, player: Entity) {
+pub fn update(input_state: &mut InputState, world: &mut World) {
     let mut run_actions = false;
 
     if let Some(position) = input_state.path.pop() {
-        {
-            let mut actor = world.get_mut::<Actor>(player).unwrap();
-            actor.action = Some(Action {
-                cost: 1.,
-                event: Events::MoveTo(position),
-            });
+        if let Some(player) = get_player_entity(world) {
+            {
+                let mut actor = world.get_mut::<Actor>(player).unwrap();
+                actor.action = Some(Action {
+                    cost: 1.,
+                    event: Events::MoveTo(position),
+                });
+            }
+            run_actions = true;
         }
-        run_actions = true;
     } else if let Some(ui_action_type) = input_state.ui_action_type {
         match ui_action_type {
             ContextMenuAction::ThrowItem(target) => {
-                if let Some(item) = input_state.selected_item.take() {
-                    run_actions = true;
-                    let mut inventory = world.get_mut::<Inventory>(player).unwrap();
-                    let to_remove_index = inventory
-                        .items
-                        .iter()
-                        .position(|i| &i.name() == &item.name())
-                        .unwrap();
-                    inventory.items.remove(to_remove_index);
-                    let mut actor = world.get_mut::<Actor>(player).unwrap();
-                    actor.action = Some(Action {
-                        cost: 1.,
-                        event: Events::ThrowItem(ThrowAction { item, target }),
-                    });
-                    input_state.ui_action_type = None;
+                if let Some(player) = get_player_entity(world) {
+                    if let Some(item) = input_state.selected_item.take() {
+                        run_actions = true;
+                        let mut inventory = world.get_mut::<Inventory>(player).unwrap();
+                        let to_remove_index = inventory
+                            .items
+                            .iter()
+                            .position(|i| &i.name() == &item.name())
+                            .unwrap();
+                        inventory.items.remove(to_remove_index);
+                        let mut actor = world.get_mut::<Actor>(player).unwrap();
+                        actor.action = Some(Action {
+                            cost: 1.,
+                            event: Events::ThrowItem(ThrowAction { item, target }),
+                        });
+                        input_state.ui_action_type = None;
+                    }
                 }
             }
             _ => {}

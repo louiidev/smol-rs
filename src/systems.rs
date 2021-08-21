@@ -71,15 +71,67 @@ pub fn create_bad_relationship(world: &mut World, entity: Entity, target: Entity
     }
 }
 
+pub fn cleanup_dead_entities(world: &mut World) {
+    let ents: Vec<Entity> = world
+        .query::<&Physics>()
+        .iter()
+        .filter(|(_, p)| !p.is_alive())
+        .map(|(e, _)| e)
+        .collect();
+
+    if !ents.is_empty() {
+        println!("{:?}", ents);
+    }
+
+    for e in ents {
+        let _ = world.despawn(e);
+    }
+}
+
+pub enum Rarity {
+    Uncommon,
+}
+
+#[derive(Clone, Copy)]
+pub struct Item {
+    damage: u32,
+}
+
+pub fn get_uncommon_items_with_damage_above(world: &mut World, dmg: u32) -> Vec<Item> {
+    world
+        .query::<&Item>()
+        .iter()
+        .filter(|(_, i)| i.damage >= dmg)
+        .map(|(_, i)| *i)
+        .collect()
+}
+
 #[cfg(test)]
 mod test {
-    use crate::{components::Transform, events::Events, math::Vec2Int, world_setup::setup_world};
+    use crate::{
+        components::Transform, events::Events, math::Vec2Int, queries::get_player_entity,
+        world_setup::setup_world,
+    };
 
     use super::*;
+    #[test]
+    fn test_cleanup() {
+        let mut world = World::new();
+
+        let a = world.spawn((10, Physics::new(0, 0.)));
+        let b = world.spawn((10, Physics::new(0, 0.)));
+        let c = world.spawn((10, Physics::new(0, 0.)));
+        cleanup_dead_entities(&mut world);
+
+        assert_eq!(world.contains(a), false);
+        assert_eq!(world.contains(b), false);
+        assert_eq!(world.contains(c), false);
+    }
 
     #[test]
     fn test_run_actor_actions() {
-        let (mut world, player) = setup_world();
+        let mut world = setup_world();
+        let player = get_player_entity(&world).unwrap();
         let mut player_pos = { world.get_mut::<Transform>(player).unwrap().grid_position };
         {
             let mut actor = world.get_mut::<Actor>(player).unwrap();

@@ -21,14 +21,14 @@ impl Invulnerable {
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Physics {
-    pub health: u16,
-    pub max_health: u16,
+    pub health: i16,
+    pub max_health: i16,
     pub speed: f32,
     pub energy: f32,
 }
 
 impl Physics {
-    pub fn new(starting_health: u16, speed: f32) -> Self {
+    pub fn new(starting_health: i16, speed: f32) -> Self {
         Self {
             health: starting_health,
             max_health: starting_health,
@@ -38,7 +38,12 @@ impl Physics {
     }
 
     pub fn take_damage(&mut self, action: &mut DamageAction) {
-        self.health -= action.amount;
+        assert!(self.health > 0);
+        self.health = (self.health - action.amount).max(0);
+    }
+
+    pub fn is_alive(&self) -> bool {
+        self.health > 0
     }
 
     pub fn generate_energy(&mut self) {

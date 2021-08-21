@@ -10,6 +10,7 @@ use crate::{
     components::{Inventory, Item},
     core::get_text_bounds,
     input::{set_captured_mousepress, InputTransition},
+    queries::get_player_entity,
     text_render::TextAlignment,
 };
 use glyph_brush::ab_glyph::Rect;
@@ -95,21 +96,24 @@ pub struct ContextMenu {
 }
 
 impl ContextMenu {
-    pub fn update(&mut self, input_state: &mut InputState, world: &World, player: Entity) {
+    pub fn update(&mut self, input_state: &mut InputState, world: &World) {
         if is_mouse_down(MouseButton::Left) {
             if let Some(pos) = self.position {
                 if let Some(index) = self.focused_index {
                     if let Some(item) = self.items.get(index) {
                         match item.action {
                             ContextMenuAction::Move => {
-                                let start = get_entity_grid_position(&world, player);
-                                let grid_pos = screen_to_grid(pos.into());
-                                input_state.path = a_star(
-                                    get_map().get_current_chunk().tiles.clone(),
-                                    start,
-                                    grid_pos,
-                                )
-                                .unwrap_or(Vec::default());
+                                let player = get_player_entity(&world);
+                                if let Some(player) = player {
+                                    let start = get_entity_grid_position(&world, player);
+                                    let grid_pos = screen_to_grid(pos.into());
+                                    input_state.path = a_star(
+                                        get_map().get_current_chunk().tiles.clone(),
+                                        start,
+                                        grid_pos,
+                                    )
+                                    .unwrap_or(Vec::default());
+                                }
                             }
                             ContextMenuAction::NOOP => todo!(),
                             ContextMenuAction::ThrowItem(e) => {
@@ -124,7 +128,6 @@ impl ContextMenu {
         let mut remake_items = false;
 
         if is_mouse_down(MouseButton::Left) {
-            println!("FIRES");
             if self.position.is_some() {
                 self.position = None;
                 set_captured_mousepress((InputTransition::Down, MouseButton::Left));
@@ -353,7 +356,7 @@ impl ItemsWindow {
         }
     }
 
-    pub fn update(&mut self, input_state: &mut InputState, world: &World, player: Entity) {
+    pub fn update(&mut self, input_state: &mut InputState, world: &World) {
         self.should_render = if let Some(ui_action) = input_state.ui_action_type {
             match ui_action {
                 ContextMenuAction::ThrowItem(_) => true,
@@ -365,8 +368,10 @@ impl ItemsWindow {
 
         if self.should_render {
             if self.items.is_empty() {
-                let inventory = world.get::<Inventory>(player).unwrap();
-                self.items = inventory.items.clone();
+                if let Some(player) = get_player_entity(&world) {
+                    let inventory = world.get::<Inventory>(player).unwrap();
+                    self.items = inventory.items.clone();
+                }
             }
         } else if !self.items.is_empty() {
             self.items = Vec::default();

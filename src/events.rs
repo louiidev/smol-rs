@@ -14,12 +14,12 @@ use hecs::{Entity, World};
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct DamageAction {
     pub attacker: Option<Entity>,
-    pub amount: u16,
+    pub amount: i16,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AttackAction {
-    pub amount: u16,
+    pub amount: i16,
     pub target: Entity,
 }
 
