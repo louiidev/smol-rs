@@ -336,13 +336,13 @@ impl Drop for FrameBuffer {
 pub struct Color(pub u8, pub u8, pub u8, pub f32);
 
 impl Color {
-    pub fn into_gl(&self) -> (f32, f32, f32, f32) {
-        (
+    pub fn normalize(&self) -> [f32; 4] {
+        [
             self.0 as f32 / 255.,
             self.1 as f32 / 255.,
             self.2 as f32 / 255.,
             self.3,
-        )
+        ]
     }
 
     pub(crate) const WHITE: Color = Color(255, 255, 255, 1.);
@@ -539,7 +539,7 @@ impl Renderer {
     }
 
     pub fn clear(color: Color) {
-        let (r, g, b, a) = color.into_gl();
+        let [r, g, b, a] = color.normalize();
         unsafe {
             gl::ClearColor(r, g, b, a);
             gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -626,7 +626,7 @@ impl Renderer {
                 gl::FALSE,
                 float_model.as_ptr(),
             );
-            let (r, g, b, a) = color.into_gl();
+            let [r, g, b, a] = color.normalize();
             gl::Uniform4f(get_uniform_location(self.shader_2d, "u_color"), r, g, b, a);
 
             gl::ActiveTexture(gl::TEXTURE0);

@@ -1,23 +1,20 @@
-pub mod ai;
 pub mod camera;
 pub mod collision;
-pub mod components;
-pub mod events;
 pub mod input;
-pub mod logging;
-pub mod map;
 pub mod math;
-pub mod pathfinding;
-pub mod queries;
 pub mod render;
 pub mod render_batch;
-pub mod systems;
+pub mod renderer;
 pub mod text_render;
-pub mod texture_packer;
 pub mod ui;
-pub mod world_setup;
 
-use crate::input::Input;
+#[cfg(feature = "opengl")]
+mod opengl;
+
+#[cfg(feature = "vulkan")]
+mod vulkan;
+
+// use crate::input::Input;
 use std::time::Instant;
 
 #[derive(Debug)]
@@ -300,8 +297,8 @@ pub mod core {
             }
         }
 
-        ctx.input.set_keys(&ctx.event_pump);
-        ctx.input.set_mouse_state(&ctx.event_pump);
+        // ctx.input.set_keys(&ctx.event_pump);
+        // ctx.input.set_mouse_state(&ctx.event_pump);
         ctx.loop_helper.loop_sleep();
     }
 
@@ -312,6 +309,12 @@ pub mod core {
     pub fn fps() -> f64 {
         get_context().timer_state.fps.unwrap_or(60.).round()
     }
+
+    #[cfg(feature = "opengl")]
+    pub fn gfx_init() {}
+
+    #[cfg(feature = "vulkan")]
+    pub fn gfx() {}
 
     pub fn init() {
         let sdl_context = sdl2::init().unwrap();
@@ -352,7 +355,6 @@ pub mod core {
                 _gl_context,
                 time_step: TimeStep::new(),
                 delta_time: 1. / 60.,
-                input: Input::new(),
                 window_size: Vec2Int {
                     x: screen_width as i32,
                     y: screen_height as i32,
@@ -373,7 +375,6 @@ pub mod core {
         event_pump: EventPump,
         _gl_context: GLContext,
         time_step: TimeStep,
-        pub input: Input,
         delta_time: f32,
         pub window_size: Vec2Int,
         loop_helper: LoopHelper,

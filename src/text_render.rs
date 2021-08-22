@@ -87,7 +87,7 @@ impl TextRenderer {
         let text_group: Vec<Text> = text
             .iter()
             .map(|(t, color)| {
-                let (r, g, b, a) = color.into_gl();
+                let [r, g, b, a] = color.normalize();
                 let base_text = Text::new(&t).with_scale(scale).with_color([r, g, b, a]);
                 base_text
             })
@@ -123,7 +123,7 @@ impl TextRenderer {
     pub fn queue_text_ex(&mut self, text: &str, text_config: TextQueueConfig) -> Option<Rect> {
         let scale = (text_config.font_size * get_window_scale().x).round();
         let base_text = Text::new(text).with_scale(scale);
-        let (r, g, b, a) = text_config.color.into_gl();
+        let [r, g, b, a] = text_config.color.normalize();
         let section = Section::default()
             .add_text(base_text.with_color([r, g, b, a]))
             .with_screen_position((text_config.position.x, text_config.position.y))
