@@ -5,7 +5,9 @@ use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::{fs, io::Write, path::PathBuf};
-use texture_packer::{exporter::ImageExporter, TexturePacker, TexturePackerConfig};
+use texture_packer::{
+    exporter::ImageExporter, importer::ImageImporter, TexturePacker, TexturePackerConfig,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AseTextureData {

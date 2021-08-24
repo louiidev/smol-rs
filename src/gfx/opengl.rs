@@ -4,6 +4,8 @@ use std::mem;
 use std::ptr;
 use std::str;
 
+use image::DynamicImage;
+
 use crate::math::*;
 use crate::renderer::Vertex;
 
@@ -22,8 +24,8 @@ pub struct GfxContext {
 
 impl GfxContext {
     pub fn new() -> Self {
-        let vs = compile_shader(include_str!("shader/2d.vs"), gl::VERTEX_SHADER);
-        let fs = compile_shader(include_str!("shader/2d.fs"), gl::FRAGMENT_SHADER);
+        let vs = compile_shader(include_str!("../shader/2d.vs"), gl::VERTEX_SHADER);
+        let fs = compile_shader(include_str!("../shader/2d.fs"), gl::FRAGMENT_SHADER);
         let default_shader = link_program(vs, fs);
 
         let vbo_id = 0;
@@ -36,6 +38,68 @@ impl GfxContext {
             vao_id,
             vbo_id,
         }
+    }
+
+    pub fn generate_texture<'a>(bytes: &'a [u8]) -> (i32, i32, u32) {
+        let mut texture_id = 0;
+
+        let (width, height, img_data, internal_format, format) =
+            match image::load_from_memory(bytes).expect("Could not load image at src: {}") {
+                DynamicImage::ImageRgba8(_image) => (
+                    _image.width() as i32,
+                    _image.height() as i32,
+                    _image.into_raw(),
+                    gl::RGBA8,
+                    gl::RGBA,
+                ),
+                DynamicImage::ImageRgb8(_image) => (
+                    _image.width() as i32,
+                    _image.height() as i32,
+                    _image.into_raw(),
+                    gl::RGB8,
+                    gl::RGB,
+                ),
+                img => {
+                    let _image = img.to_rgba8();
+                    (
+                        _image.width() as i32,
+                        _image.height() as i32,
+                        _image.into_raw(),
+                        gl::RGBA8,
+                        gl::RGBA,
+                    )
+                }
+            };
+
+        let img_ptr = img_data.as_ptr() as *const c_void;
+
+        unsafe {
+            gl::GenTextures(1, &mut texture_id);
+            gl::BindTexture(gl::TEXTURE_2D, texture_id);
+
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+            // set texture filtering parameters
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                0,
+                internal_format as i32,
+                width,
+                height,
+                0,
+                format,
+                gl::UNSIGNED_BYTE,
+                img_ptr,
+            );
+            gl::GenerateMipmap(gl::TEXTURE_2D);
+
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        };
+
+        (width, height, texture_id)
     }
 
     pub fn render(&self, verticies: &Vec<Vertex>, indicies: &Vec<i32>) {

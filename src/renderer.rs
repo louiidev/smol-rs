@@ -5,12 +5,9 @@ use std::mem;
 use std::ptr;
 use std::str;
 
-#[cfg(feature = "opengl")]
-use crate::opengl::GfxContext;
+use crate::gfx::GfxContext;
 
 use crate::render::Color;
-#[cfg(feature = "vulkan")]
-use crate::vulkan::GfxContext;
 
 use crate::math::*;
 
@@ -34,12 +31,22 @@ pub enum Anchor {
 }
 
 pub struct Texture {
+    pub id: u32,
     pub size: Vec2,
     atlas_position: Vec2,
     atlas_size: Vec2,
 }
 
 impl Texture {
+    pub fn new(id: u32, size: Vec2, atlas_position: Vec2, atlas_size: Vec2) -> Self {
+        Self {
+            id,
+            size,
+            atlas_position,
+            atlas_size,
+        }
+    }
+
     pub fn get_tex_coords(&self) -> [[f32; 2]; 4] {
         [[1., 1.], [1., 1.], [1., 1.], [1., 1.]]
     }
@@ -185,4 +192,9 @@ impl Renderer {
 
         self.verticies.append(&mut new_verticies);
     }
+}
+
+#[test]
+fn loading_test() {
+    Renderer::load_into_atlas(vec![include_bytes!("./shader/2d.vs")]);
 }

@@ -1,5 +1,8 @@
+pub mod asset_store;
 pub mod camera;
 pub mod collision;
+pub mod errors;
+pub mod gfx;
 pub mod input;
 pub mod math;
 pub mod render;
@@ -7,9 +10,6 @@ pub mod render_batch;
 pub mod renderer;
 pub mod text_render;
 pub mod ui;
-
-#[cfg(feature = "opengl")]
-mod opengl;
 
 #[cfg(feature = "vulkan")]
 mod vulkan;
@@ -66,7 +66,6 @@ pub mod core {
     use super::*;
     use crate::camera::Camera;
     use crate::math::*;
-    use crate::render::Color;
     use crate::render::*;
     use crate::text_render::TextQueueConfig;
     use crate::text_render::TextRenderer;
