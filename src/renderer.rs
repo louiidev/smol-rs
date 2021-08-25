@@ -30,6 +30,7 @@ pub enum Anchor {
     TopLeft,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct Texture {
     pub id: u32,
     pub size: Vec2,
@@ -192,9 +193,4 @@ impl Renderer {
 
         self.verticies.append(&mut new_verticies);
     }
-}
-
-#[test]
-fn loading_test() {
-    Renderer::load_into_atlas(vec![include_bytes!("./shader/2d.vs")]);
 }

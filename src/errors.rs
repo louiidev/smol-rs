@@ -17,3 +17,19 @@ impl std::convert::From<image::ImageError> for SmolError {
         }
     }
 }
+
+impl std::convert::From<std::io::Error> for SmolError {
+    fn from(e: std::io::Error) -> SmolError {
+        SmolError {
+            message: e.to_string(),
+        }
+    }
+}
+
+impl std::convert::From<ron::de::Error> for SmolError {
+    fn from(e: ron::Error) -> SmolError {
+        SmolError {
+            message: e.to_string(),
+        }
+    }
+}

@@ -345,11 +345,15 @@ impl Color {
         ]
     }
 
-    pub(crate) const WHITE: Color = Color(255, 255, 255, 1.);
-    pub(crate) const BLUE: Color = Color(10, 10, 255, 1.);
-    pub(crate) const RED: Color = Color(255, 10, 10, 1.);
-    pub(crate) const GREEN: Color = Color(10, 255, 10, 1.);
-    pub(crate) const BLACK: Color = Color(1, 1, 1, 1.);
+    pub fn rgb(r: u8, g: u8, b: u8) -> Self {
+        Self(r, g, b, 1.)
+    }
+
+    pub const WHITE: Color = Color(255, 255, 255, 1.);
+    pub const BLUE: Color = Color(10, 10, 255, 1.);
+    pub const RED: Color = Color(255, 10, 10, 1.);
+    pub const GREEN: Color = Color(10, 255, 10, 1.);
+    pub const BLACK: Color = Color(1, 1, 1, 1.);
 }
 
 pub fn get_uniform_location(shader: u32, name: &str) -> i32 {

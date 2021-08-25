@@ -33,7 +33,6 @@ version = "0.14.0"
 version = "0.34"
 default-features = false
 features = ["static-link","use-vcpkg"]
-optional = true
 
 [package.metadata.vcpkg]
 dependencies = ["sdl2"]
@@ -45,12 +44,10 @@ x86_64-pc-windows-msvc = { triplet = "x64-windows-static-md" }
 
 
 [features]
-default = ["opengl", "sdl"]
+default = ["opengl"]
 # Defines a feature named `webp` that does not enable any other features.
 opengl = ["gl"]
 # these arent supported yet, maybe they will never be but I'll leave them here for now..
 vulkan = []
 d11 = []
 d12 = []
-sdl = ["sdl2"]
-win32 = [] 

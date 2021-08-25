@@ -4,9 +4,17 @@ use std::mem;
 use std::ptr;
 use std::str;
 
+use gl::types::GLchar;
+use gl::types::GLint;
 use image::DynamicImage;
+use sdl2::video::GLProfile;
+use sdl2::video::SwapInterval;
+use sdl2::video::Window;
+use sdl2::Sdl;
 
+use crate::core::AppSettings;
 use crate::math::*;
+use crate::render::Color;
 use crate::renderer::Vertex;
 
 macro_rules! gl_assert_ok {
@@ -24,8 +32,8 @@ pub struct GfxContext {
 
 impl GfxContext {
     pub fn new() -> Self {
-        let vs = compile_shader(include_str!("../shader/2d.vs"), gl::VERTEX_SHADER);
-        let fs = compile_shader(include_str!("../shader/2d.fs"), gl::FRAGMENT_SHADER);
+        let vs = compile_shader(include_str!("../shader/test.vs"), gl::VERTEX_SHADER);
+        let fs = compile_shader(include_str!("../shader/test.fs"), gl::FRAGMENT_SHADER);
         let default_shader = link_program(vs, fs);
 
         let vbo_id = 0;
@@ -37,6 +45,14 @@ impl GfxContext {
             default_shader,
             vao_id,
             vbo_id,
+        }
+    }
+
+    pub fn clear(&self, color: Color) {
+        let [r, g, b, a] = color.normalize();
+        unsafe {
+            gl::ClearColor(r, g, b, a);
+            gl::Clear(gl::COLOR_BUFFER_BIT);
         }
     }
 
@@ -125,25 +141,35 @@ impl Drop for GfxContext {
 }
 
 pub fn compile_shader(src: &str, ty: gl::types::GLenum) -> u32 {
-    let id;
+    let shader;
     unsafe {
-        id = gl::CreateShader(ty);
+        shader = gl::CreateShader(ty);
         let c_str = CString::new(src.as_bytes()).unwrap();
-        gl::ShaderSource(id, 1, &c_str.as_ptr(), ptr::null());
-        gl::CompileShader(id);
-        let mut status = gl::FALSE as gl::types::GLint;
-        gl::GetShaderiv(id, gl::COMPILE_STATUS, &mut status);
-        if status != (gl::TRUE as gl::types::GLint) {
+        println!("{}", src);
+        gl::ShaderSource(shader, 1, &c_str.as_ptr(), ptr::null());
+        gl::CompileShader(shader);
+        let mut status = GLint::from(gl::FALSE);
+        gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut status);
+
+        if status != GLint::from(gl::TRUE) {
             let mut len = 0;
-            gl::GetShaderiv(id, gl::INFO_LOG_LENGTH, &mut len);
+            gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
             let mut buf = Vec::with_capacity(len as usize);
-            buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
-            gl::GetShaderInfoLog(
-                id,
+            buf.set_len(len as usize); // subtract 1 to skip the trailing null character
+            gl::GetProgramInfoLog(
+                shader,
                 len,
                 ptr::null_mut(),
-                buf.as_mut_ptr() as *mut gl::types::GLchar,
+                buf.as_mut_ptr() as *mut GLchar,
             );
+
+            let mut status = GLint::from(gl::FALSE);
+            gl::GetShaderiv(shader, gl::LINK_STATUS, &mut status);
+
+            if status != GLint::from(gl::TRUE) {
+                println!("Link error");
+            }
+
             panic!(
                 "couldn't compile shader {}",
                 str::from_utf8(&buf)
@@ -153,7 +179,7 @@ pub fn compile_shader(src: &str, ty: gl::types::GLenum) -> u32 {
         }
     }
 
-    id
+    shader
 }
 
 pub fn link_program(vs: u32, fs: u32) -> u32 {
@@ -200,4 +226,26 @@ pub fn gl_err_to_str(err: u32) -> &'static str {
         gl::STACK_OVERFLOW => "STACK_OVERFLOW",
         _ => "Unknown error",
     }
+}
+
+pub fn build_window(sdl_context: &Sdl, settings: &AppSettings) -> Window {
+    let video_subsystem = sdl_context.video().unwrap();
+
+    let gl_attr = video_subsystem.gl_attr();
+    gl_attr.set_context_profile(GLProfile::Core);
+    gl_attr.set_context_version(3, 3);
+
+    let window = video_subsystem
+        .window("Window", settings.size.x as _, settings.size.y as _)
+        .opengl()
+        .build()
+        .unwrap();
+
+    // let window = window_builder.build().unwrap();
+    let _gl_context = window.gl_create_context().unwrap();
+    gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
+    let _ = video_subsystem.gl_set_swap_interval(SwapInterval::VSync);
+    debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
+    debug_assert_eq!(gl_attr.context_version(), (3, 3));
+    window
 }
