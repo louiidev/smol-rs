@@ -113,8 +113,8 @@ pub mod core {
     impl App {
         pub fn new(settings: AppSettings) -> Self {
             let sdl_context = sdl2::init().unwrap();
-            let window = build_window(&sdl_context, &settings);
-
+            let (window, _gl_context) = build_window(&sdl_context, &settings);
+            let gfx = GfxContext::new();
             let event_pump = sdl_context.event_pump().unwrap();
 
             let loop_helper = LoopHelper::builder()
@@ -126,7 +126,7 @@ pub mod core {
                 event_pump,
                 loop_helper,
                 window,
-                gfx: GfxContext::new(),
+                gfx,
                 asset_store: AssetStore::default(),
             }
         }

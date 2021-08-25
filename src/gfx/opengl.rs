@@ -7,6 +7,7 @@ use std::str;
 use gl::types::GLchar;
 use gl::types::GLint;
 use image::DynamicImage;
+use sdl2::video::GLContext;
 use sdl2::video::GLProfile;
 use sdl2::video::SwapInterval;
 use sdl2::video::Window;
@@ -32,15 +33,13 @@ pub struct GfxContext {
 
 impl GfxContext {
     pub fn new() -> Self {
-        let vs = compile_shader(include_str!("../shader/test.vs"), gl::VERTEX_SHADER);
         let fs = compile_shader(include_str!("../shader/test.fs"), gl::FRAGMENT_SHADER);
+        let vs = compile_shader(include_str!("../shader/test.vs"), gl::VERTEX_SHADER);
         let default_shader = link_program(vs, fs);
 
         let vbo_id = 0;
         let vao_id = 0;
-        unsafe {
-            gl_assert_ok!();
-        }
+
         GfxContext {
             default_shader,
             vao_id,
@@ -143,6 +142,7 @@ impl Drop for GfxContext {
 pub fn compile_shader(src: &str, ty: gl::types::GLenum) -> u32 {
     let shader;
     unsafe {
+        gl_assert_ok!();
         shader = gl::CreateShader(ty);
         let c_str = CString::new(src.as_bytes()).unwrap();
         println!("{}", src);
@@ -228,16 +228,17 @@ pub fn gl_err_to_str(err: u32) -> &'static str {
     }
 }
 
-pub fn build_window(sdl_context: &Sdl, settings: &AppSettings) -> Window {
+pub fn build_window(sdl_context: &Sdl, settings: &AppSettings) -> (Window, GLContext) {
     let video_subsystem = sdl_context.video().unwrap();
 
     let gl_attr = video_subsystem.gl_attr();
     gl_attr.set_context_profile(GLProfile::Core);
-    gl_attr.set_context_version(3, 3);
+    gl_attr.set_context_version(4, 1);
 
     let window = video_subsystem
         .window("Window", settings.size.x as _, settings.size.y as _)
         .opengl()
+        .resizable()
         .build()
         .unwrap();
 
@@ -246,6 +247,9 @@ pub fn build_window(sdl_context: &Sdl, settings: &AppSettings) -> Window {
     gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
     let _ = video_subsystem.gl_set_swap_interval(SwapInterval::VSync);
     debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
-    debug_assert_eq!(gl_attr.context_version(), (3, 3));
-    window
+    debug_assert_eq!(gl_attr.context_version(), (4, 1));
+    unsafe {
+        gl_assert_ok!();
+    }
+    (window, _gl_context)
 }
