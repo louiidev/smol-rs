@@ -1,4 +1,5 @@
 use image::DynamicImage;
+use sdl2::video::Window;
 use std::ffi::c_void;
 use std::ffi::CString;
 use std::mem;
@@ -54,10 +55,11 @@ impl Texture {
 }
 
 pub struct DrawOptions {
-    anchor: Anchor,
-    color: Color,
-    size: Vec2,
-    position: Vec2,
+    pub anchor: Anchor,
+    pub color: Color,
+    pub size: Vec2,
+    pub position: Vec2,
+    pub scale: Vec2,
 }
 
 impl Default for DrawOptions {
@@ -67,6 +69,7 @@ impl Default for DrawOptions {
             color: Color::WHITE,
             size: Vec2::default(),
             position: Vec2::default(),
+            scale: Vec2::new(1., 1.),
         }
     }
 }
@@ -80,6 +83,10 @@ impl Renderer {
             verticies: Vec::default(),
             indicies: Vec::default(),
         }
+    }
+
+    pub fn clear(&self, color: Color) {
+        self.context.clear(color);
     }
 
     pub fn render(&mut self) {
@@ -98,7 +105,7 @@ impl Renderer {
         );
     }
 
-    pub fn texture(&mut self, options: DrawOptions, texture: Texture) {
+    pub fn texture(&mut self, options: DrawOptions, texture: &Texture) {
         let size = if options.size != Vec2::default() {
             texture.size
         } else {
@@ -120,7 +127,7 @@ impl Renderer {
         size: Vec2,
         color: [f32; 4],
         anchor: Anchor,
-        texture: Option<Texture>,
+        texture: Option<&Texture>,
     ) {
         let verticies_amount: i32 = self.verticies.len() as _;
         let new_verticies_size = verticies_amount / 4 + 1;
@@ -192,5 +199,9 @@ impl Renderer {
         ];
 
         self.verticies.append(&mut new_verticies);
+    }
+
+    pub fn swap_buffer(&self, window: &Window) {
+        self.context.swap_buffer(&window);
     }
 }

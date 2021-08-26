@@ -1,20 +1,4 @@
 {
-    "wapper": (
-        width: 32,
-        height: 32,
-        basename: "wapper",
-        frame: 0,
-        x: 80,
-        y: 0,
-    ),
-    "tree": (
-        width: 16,
-        height: 16,
-        basename: "tree",
-        frame: 0,
-        x: 64,
-        y: 0,
-    ),
     "grass": (
         width: 16,
         height: 16,
@@ -23,12 +7,12 @@
         x: 16,
         y: 0,
     ),
-    "dot": (
-        width: 16,
-        height: 16,
-        basename: "dot",
+    "wapper": (
+        width: 32,
+        height: 32,
+        basename: "wapper",
         frame: 0,
-        x: 0,
+        x: 80,
         y: 0,
     ),
     "minicoo": (
@@ -39,12 +23,28 @@
         x: 32,
         y: 0,
     ),
+    "dot": (
+        width: 16,
+        height: 16,
+        basename: "dot",
+        frame: 0,
+        x: 0,
+        y: 0,
+    ),
     "player": (
         width: 16,
         height: 16,
         basename: "player",
         frame: 0,
         x: 48,
+        y: 0,
+    ),
+    "tree": (
+        width: 16,
+        height: 16,
+        basename: "tree",
+        frame: 0,
+        x: 64,
         y: 0,
     ),
 }

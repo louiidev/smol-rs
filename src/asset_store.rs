@@ -7,6 +7,7 @@ use crate::{gfx::GfxContext, math::Vec2};
 use hashbrown::HashMap;
 use image::io::Reader;
 use image::GenericImageView;
+use rand::distributions::Open01;
 use ron::de::from_str;
 use serde::Deserialize;
 use texture_packer::{
@@ -51,6 +52,10 @@ impl AssetStore {
         self.textures.insert(name.to_owned(), *texture);
 
         Ok(())
+    }
+
+    pub fn get_texture(&self, name: &str) -> Option<&Texture> {
+        self.textures.get(name)
     }
 
     pub fn load_texture<'a>(

@@ -69,6 +69,7 @@ pub mod core {
     use crate::gfx::{build_window, GfxContext};
     use crate::math::*;
     use crate::render::*;
+    use crate::renderer::*;
     use glyph_brush::ab_glyph::Rect;
     use lazy_static::lazy_static;
     use sdl2::event::Event;
@@ -106,7 +107,7 @@ pub mod core {
         loop_helper: LoopHelper,
         window: Window,
         pub running: bool,
-        pub gfx: GfxContext,
+        pub renderer: Renderer,
         pub asset_store: AssetStore,
     }
 
@@ -114,7 +115,7 @@ pub mod core {
         pub fn new(settings: AppSettings) -> Self {
             let sdl_context = sdl2::init().unwrap();
             let (window, _gl_context) = build_window(&sdl_context, &settings);
-            let gfx = GfxContext::new();
+            let renderer = Renderer::new();
             let event_pump = sdl_context.event_pump().unwrap();
 
             let loop_helper = LoopHelper::builder()
@@ -126,13 +127,16 @@ pub mod core {
                 event_pump,
                 loop_helper,
                 window,
-                gfx,
+                renderer,
                 asset_store: AssetStore::default(),
             }
         }
 
-        pub fn end_render(&mut self) {
-            self.window.gl_swap_window();
+        pub fn end_scene(&mut self) {
+            self.renderer.render(); // render batch
+
+            self.renderer.swap_buffer(&self.window);
+
             for event in self.event_pump.poll_iter() {
                 match event {
                     Event::Quit { .. }

@@ -129,6 +129,10 @@ impl GfxContext {
             )
         }
     }
+
+    pub fn swap_buffer(&self, window: &Window) {
+        window.gl_swap_window();
+    }
 }
 
 impl Drop for GfxContext {

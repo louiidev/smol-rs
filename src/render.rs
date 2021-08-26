@@ -426,7 +426,7 @@ pub fn link_program(vs: u32, fs: u32) -> u32 {
     }
 }
 
-pub struct Renderer {
+pub struct Render {
     shader_2d: u32,
     vao: u32,
     vbo: u32,
@@ -437,7 +437,7 @@ pub struct Renderer {
     pub frame_buffer: FrameBuffer,
 }
 
-impl Renderer {
+impl Render {
     pub fn default(w: i32, h: i32) -> Self {
         let white_texture: u32 = 0xffffffff;
         let mut white_tex_id: u32 = 0;
@@ -526,7 +526,7 @@ impl Renderer {
             gl::DeleteShader(vs);
         }
 
-        Renderer {
+        Render {
             vao,
             vbo: vertex_buffer_object,
             ibo: index_buffer_object,
@@ -643,7 +643,7 @@ impl Renderer {
     }
 
     pub fn texture(&self, texture: &Texture, position: Vec2) {
-        Renderer::texture_scale(self, texture, position, 1.0);
+        Render::texture_scale(self, texture, position, 1.0);
     }
 
     pub fn texture_scale(&self, texture: &Texture, position: Vec2, scale: f32) {
@@ -682,11 +682,11 @@ impl Renderer {
     }
 
     pub fn texture_rect(self, texture: &Texture, rect: Rectangle, position: Vec2) {
-        Renderer::texture_rect_scale(self, texture, rect, position, 1.0);
+        Render::texture_rect_scale(self, texture, rect, position, 1.0);
     }
 
     pub fn texture_rect1(&self, texture: &Texture, position: Vec2) {
-        Renderer::texture_scale(self, texture, position, 1.0);
+        Render::texture_scale(self, texture, position, 1.0);
     }
 
     pub fn framebuffer_texture_scale(&self, texture: &Texture, position: Vec2, scale: Vec2) {
@@ -819,7 +819,7 @@ impl Renderer {
             h: texture.width as f32,
         };
 
-        Renderer::atlas_sub_rect(
+        Render::atlas_sub_rect(
             self,
             texture.texture_id,
             texture.texture_width,
@@ -919,7 +919,7 @@ impl Renderer {
     }
 }
 
-impl Drop for Renderer {
+impl Drop for Render {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteProgram(self.shader_2d);
