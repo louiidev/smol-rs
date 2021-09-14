@@ -23,7 +23,9 @@ serde="*"
 glyph_brush="*"
 spin_sleep = "1.0.0"
 hashbrown = "0.11"
-regex = "1.5"
+nalgebra-glm = "0.15.0"
+nalgebra = "*"
+ab_glyph = "0.2.11"
 
 [dependencies.gl]
 optional = true

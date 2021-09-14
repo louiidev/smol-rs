@@ -1,13 +1,10 @@
-use std::ffi::c_void;
-use std::ffi::CString;
-use std::mem;
-use std::ptr;
-use std::str;
-
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
 use sdl2::video::Window;
 
-use crate::core::AppSettings;
-use crate::math::*;
+use crate::glm::*;
+use crate::AppSettings;
 
 pub struct GfxContext {}
 

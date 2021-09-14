@@ -1,24 +1,22 @@
-use smol_rs::core::{App, AppSettings};
+use nalgebra::Vector;
 use smol_rs::errors::SmolError;
-use smol_rs::render::Color;
-use smol_rs::renderer::DrawOptions;
+
+use smol_rs::{import_file, App, AppSettings, Color, Transform};
 
 extern crate smol_rs;
 
 fn main() -> Result<(), SmolError> {
     let mut app = App::new(AppSettings::default());
 
-    app.asset_store.load_atlas_texture(
-        include_bytes!("../assets/atlas.png"),
-        include_str!("../assets/atlas.ron"),
-    )?;
+    app.load_texture(import_file!("../assets/test.png"))
+        .unwrap();
 
-    while app.running {
+    while app.is_running() {
         app.renderer.clear(Color::BLACK);
 
         app.renderer.texture(
-            DrawOptions::default(),
-            app.asset_store.get_texture("player").unwrap(),
+            Transform::from(Vector::from([0. * 150., 0. * 150.])),
+            &app.get_texture("test").unwrap(),
         );
 
         app.end_scene();

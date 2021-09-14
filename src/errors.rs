@@ -33,3 +33,35 @@ impl std::convert::From<ron::de::Error> for SmolError {
         }
     }
 }
+
+impl std::convert::From<std::ffi::NulError> for SmolError {
+    fn from(e: std::ffi::NulError) -> SmolError {
+        SmolError {
+            message: e.to_string(),
+        }
+    }
+}
+
+impl std::convert::From<sdl2::IntegerOrSdlError> for SmolError {
+    fn from(e: sdl2::IntegerOrSdlError) -> Self {
+        SmolError {
+            message: e.to_string(),
+        }
+    }
+}
+
+impl std::convert::From<glyph_brush::ab_glyph::InvalidFont> for SmolError {
+    fn from(e: glyph_brush::ab_glyph::InvalidFont) -> Self {
+        SmolError {
+            message: e.to_string(),
+        }
+    }
+}
+
+impl std::convert::From<glyph_brush::BrushError> for SmolError {
+    fn from(e: glyph_brush::BrushError) -> Self {
+        SmolError {
+            message: e.to_string(),
+        }
+    }
+}

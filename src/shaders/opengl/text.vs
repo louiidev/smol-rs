@@ -8,7 +8,6 @@ const mat4 INVERT_Y_AXIS = mat4(
 );
 
 uniform mat4 projection;
-uniform mat4 view;
 
 in vec3 left_top;
 in vec2 right_bottom;
@@ -47,5 +46,5 @@ void main() {
     }
 
     f_color = color;
-    gl_Position = INVERT_Y_AXIS * projection * view * vec4(pos, left_top.z, 1.0);
+    gl_Position =  projection * vec4(pos, left_top.z, 1.0);
 }
