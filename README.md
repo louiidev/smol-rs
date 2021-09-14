@@ -8,8 +8,8 @@ This project isn't really for anyone else to use besides myself but I figured I 
 ### Current features
 * Font rendering
 * Sprite rendering
-* Rect rendering
-* Asesprite texture packing
+* Basic shape rendering
+* Direct Aseprite loading(WIP)
 
 
 ### Work in progress
@@ -31,5 +31,5 @@ This project isn't really for anyone else to use besides myself but I figured I 
 * DirectX support
 * Vulkan support
 * Build a game with it
-* Run on the switch
+* Run it on the nintendo switch
 

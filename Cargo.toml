@@ -13,9 +13,7 @@ serde="*"
 hashbrown = { version = "0.11", features = ["serde"] }
 
 [dependencies]
-gl = "0.14.0"
 lazy_static = "1.4.0"
-hecs = "0.5.2"
 asefile = "0.2.0"
 image = "0.23.14"
 texture_packer = "0.23.0"
@@ -25,17 +23,33 @@ serde="*"
 glyph_brush="*"
 spin_sleep = "1.0.0"
 hashbrown = "0.11"
-regex = "1.5"
+nalgebra-glm = "0.15.0"
+nalgebra = "*"
+ab_glyph = "0.2.11"
+
+[dependencies.gl]
+optional = true
+version = "0.14.0"
 
 [dependencies.sdl2]
 version = "0.34"
 default-features = false
-features = ["ttf","image","gfx","mixer","static-link","use-vcpkg"]
+features = ["static-link","use-vcpkg"]
 
 [package.metadata.vcpkg]
-dependencies = ["sdl2", "sdl2-image[libjpeg-turbo,tiff,libwebp]", "sdl2-ttf", "sdl2-gfx", "sdl2-mixer"]
+dependencies = ["sdl2"]
 git = "https://github.com/microsoft/vcpkg"
 rev = "261c458af6e3eed5d099144aff95d2b5035f656b"
 
 [package.metadata.vcpkg.target]
 x86_64-pc-windows-msvc = { triplet = "x64-windows-static-md" }
+
+
+[features]
+default = ["opengl"]
+# Defines a feature named `webp` that does not enable any other features.
+opengl = ["gl"]
+# these arent supported yet, maybe they will never be but I'll leave them here for now..
+vulkan = []
+d11 = []
+d12 = []
