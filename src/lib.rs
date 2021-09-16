@@ -18,6 +18,7 @@ use crate::asset_store::AssetStore;
 pub use crate::color::*;
 use crate::gfx::build_window;
 use crate::input::Input;
+pub use crate::renderer::shapes::*;
 use crate::renderer::Renderer;
 pub use crate::transform::*;
 use math::Vector;
@@ -106,7 +107,7 @@ impl App {
     pub fn end_scene(&mut self) {
         self.renderer.render(); // render batch
         self.renderer.swap_buffer(&self.window);
-
+        let mut mouse_scroll_direction = 0;
         for event in self.event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -122,12 +123,14 @@ impl App {
                     }
                     _ => {}
                 },
+                Event::MouseWheel { y, .. } => mouse_scroll_direction = y,
                 _ => {}
             }
         }
 
         self.input.set_keys(&self.event_pump);
-        self.input.set_mouse_state(&self.event_pump);
+        self.input
+            .set_mouse_state(&self.event_pump, mouse_scroll_direction);
         self.loop_helper.loop_sleep();
     }
 }

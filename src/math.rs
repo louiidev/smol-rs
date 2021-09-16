@@ -1,14 +1,6 @@
 use crate::math::Vector2;
 use glyph_brush::ab_glyph::Rect;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub struct Rectangle {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
-}
-
 impl Rectangle {
     pub fn add_padding(&mut self, expand_by: Vector2<f32>) {
         self.x -= expand_by.x;

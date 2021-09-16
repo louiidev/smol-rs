@@ -24,10 +24,14 @@ fn main() -> Result<(), SmolError> {
                 Keycode::Down => position.y += 1.,
                 Keycode::Right => position.x += 1.,
                 Keycode::Left => position.x -= 1.,
-                Keycode::Plus => zoom += 0.1,
-                Keycode::Minus => zoom -= 0.1,
                 _ => {}
             }
+        }
+
+        if app.input.mouse_scroll_direction > 0 {
+            zoom += 0.5;
+        } else if app.input.mouse_scroll_direction < 0 {
+            zoom -= 0.5;
         }
 
         app.renderer.camera.zoom = zoom;

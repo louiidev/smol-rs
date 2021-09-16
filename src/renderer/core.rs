@@ -11,7 +11,7 @@ use nalgebra::{Vector, Vector2, Vector4};
 use crate::renderer::texture::{Font, Texture};
 
 use super::shader::Shader;
-
+#[allow(dead_code)]
 pub(crate) struct Vertex {
     pub position: Vector4<f32>,
     pub color: [f32; 4],
