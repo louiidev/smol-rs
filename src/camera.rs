@@ -1,12 +1,21 @@
-use nalgebra::{Matrix4, Vector2, Vector3};
+use nalgebra::{Matrix4, Vector, Vector2, Vector3};
 
-use crate::glm::{ortho_lh, translate};
+use crate::glm::{ortho_lh, scale, translate};
 
-#[derive(Default)]
 pub struct Camera {
     pub zoom: f32,
     pub projection_type: Projection,
     pub position: Vector3<f32>,
+}
+
+impl Default for Camera {
+    fn default() -> Self {
+        Self {
+            zoom: 1.,
+            projection_type: Projection::Orthographic,
+            position: Vector3::default(),
+        }
+    }
 }
 
 pub enum Projection {
@@ -41,9 +50,10 @@ impl Camera {
     pub(crate) fn get_projection_view_matrix(&self, window_size: Vector2<i32>) -> Matrix4<f32> {
         let proj = self.get_projection_matrix(window_size);
 
-        let view = translate(&Matrix4::identity(), &self.position)
-            .try_inverse()
-            .unwrap();
+        let mut view = translate(&Matrix4::identity(), &self.position);
+
+        view = view.try_inverse().unwrap();
+        view = scale(&view, &Vector::from([self.zoom, self.zoom, 1.]));
 
         proj * view
     }

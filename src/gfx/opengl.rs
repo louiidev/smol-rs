@@ -32,6 +32,71 @@ macro_rules! gl_assert_ok {
     }};
 }
 
+#[derive(Default)]
+pub struct ImageData {
+    pub width: u32,
+    pub height: u32,
+    pub data: Vec<u8>,
+    pub internal_format: u32,
+    pub format: u32,
+}
+
+impl ImageData {
+    pub fn new(width: u32, height: u32, data: Vec<u8>, internal_format: u32, format: u32) -> Self {
+        Self {
+            width,
+            height,
+            data,
+            internal_format,
+            format,
+        }
+    }
+
+    fn generate_aseprite_image<'a>(bytes: &'a [u8]) -> Self {
+        use asefile::AsepriteFile;
+
+        let file = AsepriteFile::read(bytes).expect("Could not load aseprite file from bytes");
+        let image = file.frame(0).image();
+
+        Self {
+            width: image.width(),
+            height: image.height(),
+            data: image.into_raw(),
+            internal_format: gl::RGBA8,
+            format: gl::RGBA,
+        }
+    }
+
+    fn generate_standard_image<'a>(bytes: &'a [u8]) -> Self {
+        match image::load_from_memory(bytes).expect("Could not load image at src: {}") {
+            DynamicImage::ImageRgba8(_image) => ImageData::new(
+                _image.width(),
+                _image.height(),
+                _image.into_raw(),
+                gl::RGBA8,
+                gl::RGBA,
+            ),
+            DynamicImage::ImageRgb8(_image) => ImageData::new(
+                _image.width(),
+                _image.height(),
+                _image.into_raw(),
+                gl::RGB8,
+                gl::RGB,
+            ),
+            img => {
+                let _image = img.to_rgba8();
+                ImageData::new(
+                    _image.width(),
+                    _image.height(),
+                    _image.into_raw(),
+                    gl::RGBA8,
+                    gl::RGBA,
+                )
+            }
+        }
+    }
+}
+
 type TextureId = u32;
 
 #[derive(Default)]
@@ -186,38 +251,15 @@ impl GfxContext {
         }
     }
 
-    pub fn generate_texture<'a>(bytes: &'a [u8]) -> (i32, i32, TextureId) {
+    pub fn generate_texture<'a>(bytes: &'a [u8], extention: &str) -> (i32, i32, TextureId) {
         let mut texture_id = 0;
 
-        let (width, height, img_data, internal_format, format) =
-            match image::load_from_memory(bytes).expect("Could not load image at src: {}") {
-                DynamicImage::ImageRgba8(_image) => (
-                    _image.width() as i32,
-                    _image.height() as i32,
-                    _image.into_raw(),
-                    gl::RGBA8,
-                    gl::RGBA,
-                ),
-                DynamicImage::ImageRgb8(_image) => (
-                    _image.width() as i32,
-                    _image.height() as i32,
-                    _image.into_raw(),
-                    gl::RGB8,
-                    gl::RGB,
-                ),
-                img => {
-                    let _image = img.to_rgba8();
-                    (
-                        _image.width() as i32,
-                        _image.height() as i32,
-                        _image.into_raw(),
-                        gl::RGBA8,
-                        gl::RGBA,
-                    )
-                }
-            };
+        let image_data = match extention {
+            "aseprite" => ImageData::generate_aseprite_image(bytes),
+            _ => ImageData::generate_standard_image(bytes),
+        };
 
-        let img_ptr = img_data.as_ptr() as *const c_void;
+        let img_ptr = image_data.data.as_ptr() as *const c_void;
 
         unsafe {
             gl::GenTextures(1, &mut texture_id);
@@ -232,11 +274,11 @@ impl GfxContext {
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
-                internal_format as i32,
-                width,
-                height,
+                image_data.internal_format as i32,
+                image_data.width as _,
+                image_data.height as _,
                 0,
-                format,
+                image_data.format,
                 gl::UNSIGNED_BYTE,
                 img_ptr,
             );
@@ -245,7 +287,7 @@ impl GfxContext {
             gl::BindTexture(gl::TEXTURE_2D, 0);
         };
 
-        (width, height, texture_id)
+        (image_data.width as _, image_data.height as _, texture_id)
     }
 
     pub(crate) fn render(

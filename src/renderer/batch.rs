@@ -88,31 +88,12 @@ impl Renderer {
             )
         };
 
+        let tex_index = self.get_texture_index(texture);
+
         let tex_coords = if let Some(texture) = texture {
             texture.get_tex_coords()
         } else {
             [[1., 1.], [1., 0.], [0., 0.], [0., 1.]]
-        };
-
-        let tex_index: i32 = {
-            let texture = if let Some(texture) = texture {
-                *texture
-            } else {
-                self.default_texture
-            };
-
-            let match_index = self
-                .bound_texture_map
-                .iter()
-                .position(|t| t.id == texture.id);
-
-            if let Some(index) = match_index {
-                index as _
-            } else {
-                let index = self.bound_texture_map.len();
-                self.bound_texture_map.push(texture);
-                index as _
-            }
         };
 
         let mut new_verticies = vec![
@@ -143,5 +124,26 @@ impl Renderer {
         ];
 
         self.verticies.append(&mut new_verticies);
+    }
+
+    pub(crate) fn get_texture_index(&mut self, texture: Option<&Texture>) -> i32 {
+        let texture = if let Some(texture) = texture {
+            *texture
+        } else {
+            self.default_texture
+        };
+
+        let match_index = self
+            .bound_texture_map
+            .iter()
+            .position(|t| t.id == texture.id);
+
+        if let Some(index) = match_index {
+            index as _
+        } else {
+            let index = self.bound_texture_map.len();
+            self.bound_texture_map.push(texture);
+            index as _
+        }
     }
 }

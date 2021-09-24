@@ -1,6 +1,6 @@
 use nalgebra::{Vector, Vector2, Vector3};
 
-use crate::renderer::Anchor;
+use crate::renderer::{shapes::Rectangle, Anchor};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Transform {
@@ -12,13 +12,6 @@ pub struct Transform {
 
 impl Transform {
     //  pub fn rect(x: f32, y: f32, width: f32, height: f32) -> Self {}
-}
-
-pub struct Rect {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
 }
 
 impl Default for Transform {
@@ -50,8 +43,8 @@ impl From<Vector3<f32>> for Transform {
     }
 }
 
-impl From<Rect> for Transform {
-    fn from(rect: Rect) -> Self {
+impl From<Rectangle> for Transform {
+    fn from(rect: Rectangle) -> Self {
         Transform {
             position: Vector::from([rect.x, rect.y, 0.]),
             scale: Vector::from([rect.width, rect.height, 0.]),

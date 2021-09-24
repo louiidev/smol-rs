@@ -31,7 +31,7 @@ macro_rules! import_file {
 
 pub type Asset<'a> = (&'a str, &'a str, &'a [u8]);
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct PackedTexture {
     width: u32,
     height: u32,
@@ -99,34 +99,45 @@ impl App {
     }
 
     pub fn load_texture<'a>(&mut self, asset: Asset<'a>) -> Result<Texture, SmolError> {
-        let (width, height, id) = GfxContext::generate_texture(asset.2);
+        let (width, height, id) = GfxContext::generate_texture(asset.2, "");
         let size = Vector::from([width as f32, height as f32]);
         let texture = Texture::new(id, size, Vector2::default(), size);
         self.insert_texture(&asset.0, texture)?;
         Ok(texture)
     }
 
-    pub fn load_atlas_texture<'a>(
+    pub fn load_single_aseprite_texture<'a>(
         &mut self,
-        atlas_bytes: &'a [u8],
-        atlas_details: &str,
-    ) -> Result<HashMap<String, Texture>, SmolError> {
-        let (width, height, id) = GfxContext::generate_texture(atlas_bytes);
-        let map = from_str::<HashMap<String, PackedTexture>>(&atlas_details)?;
-        let mut textures: HashMap<String, Texture> = HashMap::default();
-        for (name, packed_tex) in map.into_iter() {
-            let texture = Texture::new(
-                id,
-                Vector::from([packed_tex.width as f32, packed_tex.height as f32]),
-                Vector::from([packed_tex.x as f32, packed_tex.y as f32]),
-                Vector::from([width as f32, height as f32]),
-            );
-            self.insert_texture(&name, texture)?;
-            textures.insert(name, texture);
-        }
-
-        Ok(textures)
+        asset: Asset<'a>,
+    ) -> Result<Texture, SmolError> {
+        let (width, height, id) = GfxContext::generate_texture(asset.2, "aseprite");
+        let size = Vector::from([width as f32, height as f32]);
+        let texture = Texture::new(id, size, Vector2::default(), size);
+        self.insert_texture(&asset.0, texture)?;
+        Ok(texture)
     }
+
+    // pub fn load_atlas_texture<'a>(
+    //     &mut self,
+    //     atlas_bytes: &'a [u8],
+    //     atlas_details: &str,
+    // ) -> Result<HashMap<String, Texture>, SmolError> {
+    //     let (width, height, id) = GfxContext::generate_texture(atlas_bytes);
+    //     let map = from_str::<HashMap<String, PackedTexture>>(&atlas_details)?;
+    //     let mut textures: HashMap<String, Texture> = HashMap::default();
+    //     for (name, packed_tex) in map.into_iter() {
+    //         let texture = Texture::new(
+    //             id,
+    //             Vector::from([packed_tex.width as f32, packed_tex.height as f32]),
+    //             Vector::from([packed_tex.x as f32, packed_tex.y as f32]),
+    //             Vector::from([width as f32, height as f32]),
+    //         );
+    //         self.insert_texture(&name, texture)?;
+    //         textures.insert(name, texture);
+    //     }
+
+    //     Ok(textures)
+    // }
 
     pub fn load_into_texture_atlas<'a>(
         &mut self,
@@ -154,7 +165,7 @@ impl App {
         let image = ImageExporter::export(&packer).unwrap();
         let atlas_width = image.width();
         let atlas_height = image.height();
-        let (_, _, id) = GfxContext::generate_texture(image.as_bytes());
+        let (_, _, id) = GfxContext::generate_texture(image.as_bytes(), "");
 
         for (name, frame) in packer.get_frames() {
             let pos = Vector::from([frame.frame.x as f32, frame.frame.y as f32]);

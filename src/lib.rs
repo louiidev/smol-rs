@@ -18,6 +18,7 @@ use crate::asset_store::AssetStore;
 pub use crate::color::*;
 use crate::gfx::build_window;
 use crate::input::Input;
+pub use crate::renderer::shapes::*;
 use crate::renderer::Renderer;
 pub use crate::transform::*;
 use math::Vector;
@@ -63,7 +64,7 @@ pub struct App {
     pub input: Input,
     pub delta: f32,
     pub frame_rate: f32,
-
+    pub window_size: Vector2<i32>,
     #[cfg(feature = "opengl")]
     _gl_context: sdl2::video::GLContext,
 }
@@ -72,6 +73,7 @@ impl App {
     pub fn new(settings: AppSettings) -> Self {
         let sdl_context = sdl2::init().unwrap();
         let (window, _gl_context) = build_window(&sdl_context, &settings);
+        let window_size = settings.size.clone();
         let renderer = Renderer::new(settings.size);
         let event_pump = sdl_context.event_pump().unwrap();
 
@@ -89,6 +91,7 @@ impl App {
             delta: 1. / 60.,
             frame_rate: 60.,
             _gl_context,
+            window_size,
             input: Input::new(),
         }
     }
@@ -106,7 +109,7 @@ impl App {
     pub fn end_scene(&mut self) {
         self.renderer.render(); // render batch
         self.renderer.swap_buffer(&self.window);
-
+        let mut mouse_scroll_direction = 0;
         for event in self.event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -118,16 +121,19 @@ impl App {
                 }
                 Event::Window { win_event, .. } => match win_event {
                     WindowEvent::Resized(width, height) => {
-                        self.renderer.context.resize_window(width, height)
+                        self.renderer.context.resize_window(width, height);
+                        self.window_size = Vector::from([width, height]);
                     }
                     _ => {}
                 },
+                Event::MouseWheel { y, .. } => mouse_scroll_direction = y,
                 _ => {}
             }
         }
 
         self.input.set_keys(&self.event_pump);
-        self.input.set_mouse_state(&self.event_pump);
+        self.input
+            .set_mouse_state(&self.event_pump, mouse_scroll_direction);
         self.loop_helper.loop_sleep();
     }
 }

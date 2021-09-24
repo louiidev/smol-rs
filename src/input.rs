@@ -8,9 +8,10 @@ use std::collections::HashSet;
 
 pub struct Input {
     input_previous_keyboard_state: HashSet<Keycode>,
-    pub input_current_keyboard_state: HashSet<Keycode>,
+    pub(crate) input_current_keyboard_state: HashSet<Keycode>,
     previous_mouse_state: HashSet<MouseButton>,
-    pub current_mouse_state: HashSet<MouseButton>,
+    pub(crate) current_mouse_state: HashSet<MouseButton>,
+    pub mouse_scroll_direction: i32,
     mouse_state: MouseState,
 }
 
@@ -21,6 +22,7 @@ impl Input {
             input_current_keyboard_state: HashSet::new(),
             previous_mouse_state: HashSet::new(),
             current_mouse_state: HashSet::new(),
+            mouse_scroll_direction: 0,
             mouse_state: MouseState::from_sdl_state(0),
         }
     }
@@ -54,13 +56,14 @@ impl Input {
         self.previous_mouse_state.contains(&key) && !self.current_mouse_state.contains(&key)
     }
 
-    pub fn set_mouse_state(&mut self, events: &EventPump) {
+    pub fn set_mouse_state(&mut self, events: &EventPump, mouse_scroll_direction: i32) {
         let state = events.mouse_state();
         let keys = events.mouse_state().pressed_mouse_buttons().collect();
 
         self.previous_mouse_state = self.current_mouse_state.clone();
         self.current_mouse_state = keys;
         self.mouse_state = state;
+        self.mouse_scroll_direction = mouse_scroll_direction;
     }
 
     pub fn get_pressed_keys(&self) -> HashSet<&Keycode> {
