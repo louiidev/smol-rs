@@ -64,7 +64,7 @@ pub struct App {
     pub input: Input,
     pub delta: f32,
     pub frame_rate: f32,
-
+    pub window_size: Vector2<i32>,
     #[cfg(feature = "opengl")]
     _gl_context: sdl2::video::GLContext,
 }
@@ -73,6 +73,7 @@ impl App {
     pub fn new(settings: AppSettings) -> Self {
         let sdl_context = sdl2::init().unwrap();
         let (window, _gl_context) = build_window(&sdl_context, &settings);
+        let window_size = settings.size.clone();
         let renderer = Renderer::new(settings.size);
         let event_pump = sdl_context.event_pump().unwrap();
 
@@ -90,6 +91,7 @@ impl App {
             delta: 1. / 60.,
             frame_rate: 60.,
             _gl_context,
+            window_size,
             input: Input::new(),
         }
     }
@@ -119,7 +121,8 @@ impl App {
                 }
                 Event::Window { win_event, .. } => match win_event {
                     WindowEvent::Resized(width, height) => {
-                        self.renderer.context.resize_window(width, height)
+                        self.renderer.context.resize_window(width, height);
+                        self.window_size = Vector::from([width, height]);
                     }
                     _ => {}
                 },
