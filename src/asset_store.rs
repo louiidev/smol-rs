@@ -5,10 +5,10 @@ use crate::{errors::SmolError, App};
 use hashbrown::HashMap;
 use image::GenericImageView;
 use nalgebra::Vector;
-use ron::de::from_str;
 use serde::Deserialize;
 use texture_packer::{
-    exporter::ImageExporter, importer::ImageImporter, TexturePacker, TexturePackerConfig,
+    exporter::ImageExporter, importer::ImageImporter, TexturePacker, 
+    TexturePackerConfig,
 };
 
 use glyph_brush::{ab_glyph::*, *};
@@ -116,28 +116,6 @@ impl App {
         self.insert_texture(&asset.0, texture)?;
         Ok(texture)
     }
-
-    // pub fn load_atlas_texture<'a>(
-    //     &mut self,
-    //     atlas_bytes: &'a [u8],
-    //     atlas_details: &str,
-    // ) -> Result<HashMap<String, Texture>, SmolError> {
-    //     let (width, height, id) = GfxContext::generate_texture(atlas_bytes);
-    //     let map = from_str::<HashMap<String, PackedTexture>>(&atlas_details)?;
-    //     let mut textures: HashMap<String, Texture> = HashMap::default();
-    //     for (name, packed_tex) in map.into_iter() {
-    //         let texture = Texture::new(
-    //             id,
-    //             Vector::from([packed_tex.width as f32, packed_tex.height as f32]),
-    //             Vector::from([packed_tex.x as f32, packed_tex.y as f32]),
-    //             Vector::from([width as f32, height as f32]),
-    //         );
-    //         self.insert_texture(&name, texture)?;
-    //         textures.insert(name, texture);
-    //     }
-
-    //     Ok(textures)
-    // }
 
     pub fn load_into_texture_atlas<'a>(
         &mut self,
