@@ -1,7 +1,7 @@
 use nalgebra::Vector;
 use smol_rs::errors::SmolError;
-use smol_rs::renderer::text::TextSettings;
-use smol_rs::{import_file, App, AppSettings, Color, Rect, Transform};
+use smol_rs::renderer::text::{TextAlignment, TextSettings};
+use smol_rs::{import_file, App, AppSettings, Color};
 
 extern crate smol_rs;
 
@@ -16,36 +16,25 @@ fn main() -> Result<(), SmolError> {
         .load_font(import_file!("../assets/OpenSans-Light.ttf"))
         .unwrap();
 
-    let t = app
-        .load_texture(import_file!("../assets/test.png"))
-        .unwrap();
-
     while app.is_running() {
         app.renderer.clear(Color::BLACK);
-        app.renderer.rect(
-            Transform::from(Rect {
-                x: 0.,
-                y: 0.,
-                width: 50.,
-                height: 50.,
-            }),
-            Color::BLUE,
-        );
 
         app.renderer.text_ex(
             &open_sans_bold,
-            "Heeeeello",
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus rutrum tempor dolor",
             &TextSettings {
                 color: Color::WHITE,
+                alignment: TextAlignment::Center,
                 ..Default::default()
             },
         );
 
         app.renderer.text_ex(
             &open_sans_light,
-            "my name is",
+            "Nullam ac luctus erat. Curabitur dignissim consequat sapien sed cursus.",
             &TextSettings {
                 color: Color::WHITE,
+                alignment: TextAlignment::Center,
                 position: Vector::from([25., 25.]),
                 ..Default::default()
             },
@@ -53,15 +42,14 @@ fn main() -> Result<(), SmolError> {
 
         app.renderer.text_ex(
             &open_sans_bold,
-            "Slim shady",
+            " Mauris et odio id libero dignissim pretium vitae vitae est.",
             &TextSettings {
                 color: Color::WHITE,
+                alignment: TextAlignment::Center,
                 position: Vector::from([50., 50.]),
                 ..Default::default()
             },
         );
-
-        app.renderer.texture(Transform::default(), &t);
 
         app.end_scene();
     }
